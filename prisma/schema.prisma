@@ -1,0 +1,395 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================================
+// 1. IDENTITY & USER PROFILE
+// ============================================================================
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique // Supabase Auth User UID (Primary Auth Reference)
+  username        String   @unique
+  displayName     String
+  email           String   @unique
+  avatarUrl       String?
+  bio             String?
+  location        String?
+  website         String?
+  company         String?
+  githubUsername  String?
+  githubConnected Boolean  @default(false)
+  isVerified      Boolean  @default(false)
+  tier            String   @default("Free") // "Free" | "Pro" | "Enterprise"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relationships
+  githubAccount     GitHubAccount?
+  repositories      Repository[]
+  contributions     Contribution[]
+  skills            Skill[]
+  developerAnalysis DeveloperAnalysis?
+  careerInsights    CareerInsight[]
+  aiInsights        AIInsight[]
+  reports           Report[]
+  graphNodes        EvidenceGraphNode[]
+  graphEdges        EvidenceGraphEdge[]
+
+  @@index([userId])
+  @@index([username])
+}
+
+// ============================================================================
+// 2. GITHUB ACCOUNT & AUTH LINK
+// ============================================================================
+model GitHubAccount {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  userProfile      UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  githubId         String    @unique
+  username         String
+  profileUrl       String
+  avatarUrl        String?
+  accessToken      String?   // Encrypted or server-only token
+  scope            String?
+  publicRepos      Int       @default(0)
+  totalCommits     Int       @default(0)
+  totalPRs         Int       @default(0)
+  followers        Int       @default(0)
+  following        Int       @default(0)
+  accountAgeYears  Float     @default(0)
+  connectionStatus String    @default("connected") // "connected" | "syncing" | "disconnected" | "error"
+  lastSyncedAt     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([githubId])
+}
+
+// ============================================================================
+// 3. RAW EVIDENCE: REPOSITORIES
+// ============================================================================
+model Repository {
+  id                   String   @id @default(cuid())
+  userId               String
+  userProfile          UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  githubRepoId         String   // GitHub numeric ID
+  name                 String
+  fullName             String
+  description          String?
+  isPrivate            Boolean  @default(false)
+  isFork               Boolean  @default(false)
+  primaryLanguage      String?
+  stars                Int      @default(0)
+  forks                Int      @default(0)
+  watchers             Int      @default(0)
+  openIssues           Int      @default(0)
+  defaultBranch        String   @default("main")
+  repoUrl              String
+  createdAt            DateTime
+  updatedAt            DateTime
+  pushedAt             DateTime?
+  commitCount          Int      @default(0)
+  prCount              Int      @default(0)
+  linesOfCode          Int      @default(0)
+  complexity           String   @default("Medium") // "Low" | "Medium" | "High" | "Architectural"
+  evidenceStrength     String   @default("Moderate Evidence")
+  architectureType     String?
+  testCoverageEstimate String?
+  documentationScore   Int      @default(0) // 0 - 100
+  analysisStatus       String   @default("completed") // "completed" | "analyzing" | "queued" | "failed"
+  isSelected           Boolean  @default(true)
+  lastActivity         DateTime @default(now())
+
+  // Relationships
+  languages       RepositoryLanguage[]
+  technologies    RepositoryTechnology[]
+  commits         Commit[]
+  pullRequests    PullRequest[]
+  projectAnalysis ProjectAnalysis?
+  skillEvidences  SkillEvidence[]
+  reports         Report[]
+
+  @@unique([userId, githubRepoId])
+  @@index([userId])
+  @@index([name])
+}
+
+model RepositoryLanguage {
+  id           String     @id @default(cuid())
+  repositoryId String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  name         String
+  bytes        Int        @default(0)
+  percentage   Float      @default(0)
+
+  @@unique([repositoryId, name])
+  @@index([repositoryId])
+}
+
+model RepositoryTechnology {
+  id           String     @id @default(cuid())
+  repositoryId String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  name         String
+  category     String     // "Language" | "Framework" | "Database" | "DevOps" | "Testing" | "Architecture" | "Library" | "Mobile"
+  confidence   Float      @default(1.0)
+  version      String?
+
+  @@unique([repositoryId, name])
+  @@index([repositoryId])
+}
+
+// ============================================================================
+// 4. RAW EVIDENCE: COMMITS & PRS
+// ============================================================================
+model Commit {
+  id                 String     @id @default(cuid())
+  repositoryId       String
+  repository         Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  sha                String
+  message            String
+  authorName         String
+  authorEmail        String?
+  authorDate         DateTime
+  filesChanged       Int        @default(0)
+  additions          Int        @default(0)
+  deletions          Int        @default(0)
+  primarySkill       String?
+  isMergeCommit      Boolean    @default(false)
+  integrityVerified  Boolean    @default(true)
+  createdAt          DateTime   @default(now())
+
+  @@unique([repositoryId, sha])
+  @@index([repositoryId])
+  @@index([sha])
+  @@index([authorDate])
+}
+
+model PullRequest {
+  id             String     @id @default(cuid())
+  repositoryId   String
+  repository     Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  number         Int
+  title          String
+  state          String     // "merged" | "open" | "closed"
+  createdAt      DateTime
+  mergedAt       DateTime?
+  author         String
+  reviewsCount   Int        @default(0)
+  commentsCount  Int        @default(0)
+  changedFiles   Int        @default(0)
+  additions      Int        @default(0)
+  deletions      Int        @default(0)
+  primarySkills  String[]   @default([])
+
+  @@unique([repositoryId, number])
+  @@index([repositoryId])
+}
+
+// ============================================================================
+// 5. RAW EVIDENCE: TEMPORAL CONTRIBUTIONS
+// ============================================================================
+model Contribution {
+  id           String      @id @default(cuid())
+  userId       String
+  userProfile  UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repositoryId String?
+  date         DateTime
+  type         String      // "commit" | "pr_created" | "pr_merged" | "code_review" | "issue_resolved"
+  count        Int         @default(1)
+  impactScore  Int         @default(0)
+  skillTags    String[]    @default([])
+  createdAt    DateTime    @default(now())
+
+  @@index([userId])
+  @@index([date])
+}
+
+// ============================================================================
+// 6. DERIVED ANALYSIS: PROJECT & REPOSITORY
+// ============================================================================
+model ProjectAnalysis {
+  id                     String     @id @default(cuid())
+  repositoryId           String     @unique
+  repository             Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  complexityScore        Int        @default(0) // 0 - 100
+  modularityScore        Int        @default(0) // 0 - 100
+  testCoverage           String?
+  architecturalPatterns  String[]   @default([])
+  findings               Json?
+  analyzedAt             DateTime   @default(now())
+}
+
+// ============================================================================
+// 7. DERIVED ANALYSIS: SKILLS & EVIDENCE
+// ============================================================================
+model Skill {
+  id               String          @id @default(cuid())
+  userId           String
+  userProfile      UserProfile     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  category         String          // "Frontend" | "Backend" | "Mobile" | "Data/AI" | "DevOps" | "Database" | "Architecture" | "Language"
+  proficiencyScore Int             @default(0) // 0 - 100
+  evidenceStrength String          @default("Moderate Evidence")
+  evidenceCount    Int             @default(0)
+  projectCount     Int             @default(0)
+  verifiedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  evidences        SkillEvidence[]
+  evidenceNodes    Evidence[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model SkillEvidence {
+  id                           String     @id @default(cuid())
+  skillId                      String
+  skill                        Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  repositoryId                 String?
+  repository                   Repository? @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
+  totalCommits                 Int        @default(0)
+  totalPRs                     Int        @default(0)
+  activeMonths                 Int        @default(0)
+  firstObserved                DateTime?
+  lastObserved                 DateTime?
+  testingDetected              Boolean    @default(false)
+  productionDeploymentDetected Boolean    @default(false)
+  architecturePatterns         String[]   @default([])
+
+  @@index([skillId])
+}
+
+model Evidence {
+  id               String   @id @default(cuid())
+  skillId          String
+  skill            Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  sourceType       String   // "Repository" | "Commit" | "PullRequest" | "File" | "Architecture" | "Test" | "Deployment"
+  sourceName       String
+  sourceIdentifier String
+  timestamp        DateTime
+  description      String
+  strength         String   @default("Strong Evidence")
+  weight           Int      @default(50) // 1 - 100
+  associatedSkills String[] @default([])
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  @@index([skillId])
+}
+
+// ============================================================================
+// 8. EVIDENCE GRAPH (NODES & EDGES)
+// ============================================================================
+model EvidenceGraphNode {
+  id          String      @id @default(cuid())
+  userId      String
+  userProfile UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodeId      String
+  nodeType    String      // "developer" | "repository" | "technology" | "skill" | "evidence"
+  label       String
+  subLabel    String?
+  metric      String?
+  group       String
+  status      String      @default("verified")
+  createdAt   DateTime    @default(now())
+
+  @@unique([userId, nodeId])
+  @@index([userId])
+}
+
+model EvidenceGraphEdge {
+  id           String      @id @default(cuid())
+  userId       String
+  userProfile  UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  edgeId       String
+  sourceNodeId String
+  targetNodeId String
+  label        String?
+  animated     Boolean     @default(false)
+  dashed       Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+
+  @@unique([userId, edgeId])
+  @@index([userId])
+}
+
+// ============================================================================
+// 9. DERIVED ANALYSIS: DEVELOPER OVERVIEW & INTEGRITY
+// ============================================================================
+model DeveloperAnalysis {
+  id                   String      @id @default(cuid())
+  userId               String      @unique
+  userProfile          UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  primaryArchetype     String      @default("Full-Stack Systems Engineer")
+  overallIntegrityScore Int        @default(94) // 0 - 100
+  totalEvidenceNodes   Int         @default(0)
+  gitHubQualityScore   Int         @default(90) // 0 - 100
+  confidenceRating     String      @default("High Confidence")
+  analyzedAt           DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+}
+
+model CareerInsight {
+  id                  String      @id @default(cuid())
+  userId              String
+  userProfile         UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleTitle           String
+  alignmentScore      Int         // 0 - 100 (Evidence Alignment Score)
+  matchConfidence     String      // "High Alignment" | "Moderate Alignment" | "Developing"
+  strengths           String[]    @default([])
+  skillGaps           String[]    @default([])
+  recommendedProjects String[]    @default([])
+  createdAt           DateTime    @default(now())
+
+  @@index([userId])
+}
+
+// ============================================================================
+// 10. AI INTERPRETATION LAYER
+// ============================================================================
+model AIInsight {
+  id                      String      @id @default(cuid())
+  userId                  String
+  userProfile             UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  engineeringSummary      String
+  observedStrengths       String[]    @default([])
+  emergingSkills          String[]    @default([])
+  attentionAreas          String[]    @default([])
+  learningRecommendations String[]    @default([])
+  careerTrajectory        String?
+  evidenceTraceabilityKey String?     // Verification hash proving conclusions trace to stored evidence
+  generatedAt             DateTime    @default(now())
+
+  @@index([userId])
+}
+
+model Report {
+  id           String      @id @default(cuid())
+  userId       String
+  userProfile  UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repositoryId String?
+  repository   Repository? @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
+  title        String
+  status       String      @default("verified") // "verified" | "pending" | "archived"
+  reportHash   String
+  summary      String?
+  fullData     Json?
+  createdAt    DateTime    @default(now())
+
+  @@index([userId])
+}
+

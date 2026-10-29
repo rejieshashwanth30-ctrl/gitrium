@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F7F6F1;
+  --foreground: #17201B;
+  --border: #DDE1DC;
+
+  /* Consistent Global Navbar Heights */
+  --navbar-height-desktop: 70px;
+  --navbar-height-mobile: 60px;
+  --navbar-height: var(--navbar-height-mobile);
+  --scroll-offset: calc(var(--navbar-height) + 20px);
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --navbar-height: var(--navbar-height-desktop);
+    --scroll-offset: calc(var(--navbar-height) + 20px);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  color: var(--foreground);
+  background-color: var(--background);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Universal Section Scroll Margin Anchor Offset */
+.scroll-section {
+  scroll-margin-top: var(--scroll-offset);
+}
+
+/* Accessible reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Clean, disciplined scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EFEEE8;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C4CCC5;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9AA69D;
+}
+
+/* Custom slim dark scrollbar for the fixed sidebar */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #24352C;
+  border-radius: 2px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #159A72;
+}
+
+/* Selection */
+::selection {
+  background: #DDF4EA;
+  color: #087453;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  header, footer, nav, aside, .no-print {
+    display: none !important;
+  }
+}
