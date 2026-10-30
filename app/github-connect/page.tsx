@@ -51,6 +51,10 @@ function getSafeErrorMessage(error: string | null, description: string | null): 
       return desc && desc !== errCode
         ? `OAuth callback notice: ${desc}`
         : "An unexpected error occurred during GitHub authorization callback. Please try again.";
+    case "DATABASE_SCHEMA_MISMATCH":
+      return "The database schema is currently synchronizing. Please try connecting again in a moment.";
+    case "GITHUB_ACCOUNT_ALREADY_LINKED":
+      return "This GitHub account is already connected to another Gitrium user profile.";
     case "access_denied":
       return "GitHub authorization was canceled or denied. Please approve the GitHub permissions to proceed.";
     default:

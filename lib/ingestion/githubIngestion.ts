@@ -57,6 +57,29 @@ async function executeSync(
   const syncedAt = new Date();
   const errors: string[] = [];
 
+  let syncRunId: string | null = null;
+  try {
+    const pendingRun = await prisma.syncRun.findFirst({
+      where: { userId, status: "PENDING" },
+      orderBy: { startedAt: "desc" },
+    });
+
+    if (pendingRun) {
+      syncRunId = pendingRun.id;
+      await prisma.syncRun.update({
+        where: { id: syncRunId },
+        data: { status: "SYNCING", startedAt: new Date() },
+      });
+    } else {
+      const newRun = await prisma.syncRun.create({
+        data: { userId, status: "SYNCING" },
+      });
+      syncRunId = newRun.id;
+    }
+  } catch (runErr: any) {
+    console.warn("[GitHub Sync] SyncRun init notice:", runErr?.message);
+  }
+
   const coverage: SyncResult["coverage"] = {
     repositories: "FAILED",
     commits: "FAILED",
@@ -119,6 +142,18 @@ async function executeSync(
       // Ignore database cleanup errors
     }
 
+    if (syncRunId) {
+      await prisma.syncRun.update({
+        where: { id: syncRunId },
+        data: {
+          status: verification.error === "RATE_LIMITED" ? "RATE_LIMITED" : "TOKEN_EXPIRED",
+          completedAt: new Date(),
+          errorCode: verification.error,
+          errorMessageSafe: verification.errorMessage || "Token validation failed",
+        },
+      }).catch(() => {});
+    }
+
     return {
       repositoriesCount: 0,
       commitsCount: 0,
@@ -166,6 +201,18 @@ async function executeSync(
       : err?.message || "Repository fetch failed";
     errors.push(errorMsg);
     console.error(`[GitHub Sync] Failed to fetch repositories:`, errorMsg);
+    if (syncRunId) {
+      await prisma.syncRun.update({
+        where: { id: syncRunId },
+        data: {
+          status: isRateLimited ? "RATE_LIMITED" : "FAILED",
+          completedAt: new Date(),
+          errorCode: isRateLimited ? "RATE_LIMITED" : "REPO_FETCH_FAILED",
+          errorMessageSafe: errorMsg,
+        },
+      }).catch(() => {});
+    }
+
     return {
       repositoriesCount: 0,
       commitsCount: 0,
@@ -431,6 +478,21 @@ async function executeSync(
   coverage.pullRequests = prFailures === 0 ? "COMPLETE" : prFailures < repos.length ? "PARTIAL" : "FAILED";
 
   const isPartial = commitFailures > 0 || prFailures > 0 || languageFailures > 0;
+
+  if (syncRunId) {
+    await prisma.syncRun.update({
+      where: { id: syncRunId },
+      data: {
+        status: isPartial ? "PARTIAL" : "COMPLETED",
+        completedAt: new Date(),
+        repositoriesProcessed: repos.length,
+        commitsProcessed: totalCommits,
+        pullRequestsProcessed: totalPRs,
+        errorCode: isPartial ? "PARTIAL_SUCCESS" : null,
+        errorMessageSafe: errors.length > 0 ? errors.join("; ") : null,
+      },
+    }).catch(() => {});
+  }
 
   console.log(`[GitHub Sync] Successfully synchronized ${repos.length} repos, ${totalCommits} commits, ${totalPRs} PRs.`);
 

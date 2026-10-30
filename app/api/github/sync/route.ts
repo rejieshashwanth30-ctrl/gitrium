@@ -6,6 +6,43 @@ import { computeUserSkills } from "@/lib/analysis/skillAnalysis";
 
 export const dynamic = "force-dynamic";
 
+export async function GET() {
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const profile = await ensureUserProfile(user);
+    if (!profile) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    const { prisma } = await import("@/lib/db/prisma");
+    const latestRun = await prisma.syncRun.findFirst({
+      where: { userId: profile.id },
+      orderBy: { startedAt: "desc" },
+    });
+
+    return NextResponse.json({
+      success: true,
+      syncRun: latestRun || null,
+      status: latestRun?.status || "IDLE",
+    });
+  } catch (error: any) {
+    console.error("[GitHub Sync API] GET status error:", error?.message || error);
+    return NextResponse.json(
+      { success: false, error: "Failed to query sync run status" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST() {
   try {
     const supabase = createClient();

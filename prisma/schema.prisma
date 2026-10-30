@@ -44,6 +44,7 @@ model UserProfile {
   reports           Report[]
   graphNodes        EvidenceGraphNode[]
   graphEdges        EvidenceGraphEdge[]
+  syncRuns          SyncRun[]
 
   @@index([userId])
   @@index([username])
@@ -75,6 +76,28 @@ model GitHubAccount {
 
   @@index([userId])
   @@index([githubId])
+}
+
+// ============================================================================
+// 2B. GITHUB SYNCHRONIZATION STATE MACHINE
+// ============================================================================
+model SyncRun {
+  id                    String      @id @default(cuid())
+  userId                String
+  userProfile           UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status                String      @default("PENDING") // "PENDING" | "SYNCING" | "COMPLETED" | "PARTIAL" | "FAILED" | "RATE_LIMITED" | "TOKEN_EXPIRED"
+  startedAt             DateTime    @default(now())
+  completedAt           DateTime?
+  errorCode             String?
+  errorMessageSafe      String?
+  repositoriesProcessed Int         @default(0)
+  commitsProcessed      Int         @default(0)
+  pullRequestsProcessed Int         @default(0)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 // ============================================================================
