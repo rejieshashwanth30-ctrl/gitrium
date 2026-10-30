@@ -51,7 +51,13 @@ export async function GET(
         return NextResponse.json({ error: "Repository not found" }, { status: 404 });
       }
 
-      return NextResponse.json({ repository });
+      return NextResponse.json({
+        repository,
+        indexedCommitCount: repository.commitCount,
+        indexedPRCount: repository.prCount,
+        recentCommitsCount: repository.commits.length,
+        recentPRsCount: repository.pullRequests.length,
+      });
     } catch (dbErr) {
       console.warn("Database repository lookup error:", dbErr);
       return NextResponse.json({ error: "Repository not found in current index" }, { status: 404 });

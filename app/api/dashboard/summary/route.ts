@@ -31,10 +31,13 @@ export async function GET() {
     const [
       allReposCount,
       selectedRepos,
+      allReposAggregate,
       recentRepositories,
       topSkills,
       allSkillsCount,
       uniqueTechs,
+      languagesCount,
+      repoTechnologiesCount,
       ghAccount,
     ] = await Promise.all([
       // 1. Total repository count
@@ -52,7 +55,16 @@ export async function GET() {
         },
       }),
 
-      // 3. Top 5 recent repositories for display
+      // 3. Aggregate of all repositories for baseline comparison
+      prisma.repository.aggregate({
+        where: { userId: profile.id },
+        _sum: {
+          commitCount: true,
+          prCount: true,
+        },
+      }),
+
+      // 4. Top 5 recent repositories for display
       prisma.repository.findMany({
         where: { userId: profile.id },
         select: {
@@ -75,7 +87,7 @@ export async function GET() {
         orderBy: { updatedAt: "desc" },
       }),
 
-      // 4. Top 4 skills for display
+      // 5. Top 4 skills for display
       prisma.skill.findMany({
         where: { userId: profile.id },
         select: {
@@ -91,19 +103,29 @@ export async function GET() {
         orderBy: { proficiencyScore: "desc" },
       }),
 
-      // 5. Total skills count
+      // 6. Total skills count
       prisma.skill.count({
         where: { userId: profile.id },
       }),
 
-      // 6. Distinct technologies count
+      // 7. Distinct technologies count
       prisma.repositoryTechnology.findMany({
         where: { repository: { userId: profile.id } },
         select: { name: true },
         distinct: ["name"],
       }),
 
-      // 7. Real GitHub account connection verification
+      // 8. Total language breakdown count across selected repositories
+      prisma.repositoryLanguage.count({
+        where: { repository: { userId: profile.id, isSelected: true } },
+      }),
+
+      // 9. Total technology AST detections across selected repositories
+      prisma.repositoryTechnology.count({
+        where: { repository: { userId: profile.id, isSelected: true } },
+      }),
+
+      // 10. Real GitHub account connection verification
       prisma.gitHubAccount.findUnique({
         where: { userId: profile.id },
         select: {
@@ -114,19 +136,30 @@ export async function GET() {
       }),
     ]);
 
-    // Aggregate metrics
-    const totalCommits = selectedRepos.reduce(
+    // Canonical metric calculations strictly derived from Neon database records
+    const allCommits = allReposAggregate._sum.commitCount || 0;
+    const allPRs = allReposAggregate._sum.prCount || 0;
+
+    const selectedCommits = selectedRepos.reduce(
       (sum: number, r: { commitCount: number }) => sum + (r.commitCount || 0),
       0
     );
-    const totalPRs = selectedRepos.reduce(
+    const selectedPRs = selectedRepos.reduce(
       (sum: number, r: { prCount: number }) => sum + (r.prCount || 0),
       0
     );
+
+    // If repositories exist but none explicitly selected, fallback gracefully to all repos
+    const totalCommits = selectedRepos.length > 0 ? selectedCommits : allCommits;
+    const totalPRs = selectedRepos.length > 0 ? selectedPRs : allPRs;
     const totalContributions = totalCommits + totalPRs;
     const technologiesCount = uniqueTechs.length;
+
+    // Truthful evidence signals: sum of verified commits, PRs, language breakdowns, and AST tech detections
     const evidenceSignalsCount =
-      totalContributions > 0 ? totalContributions + allSkillsCount * 5 : 0;
+      totalContributions > 0
+        ? totalCommits + totalPRs + languagesCount + repoTechnologiesCount
+        : 0;
 
     const isConnected = Boolean(
       profile.githubConnected &&
