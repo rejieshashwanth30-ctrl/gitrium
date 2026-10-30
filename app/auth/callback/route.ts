@@ -4,8 +4,6 @@ import { ensureUserProfile, invalidateUserProfileCache } from "@/lib/auth/profil
 import { prisma } from "@/lib/db/prisma";
 import { encryptToken } from "@/lib/security/encryption";
 import { verifyGitHubAccessToken } from "@/lib/github/verifyToken";
-import { syncUserGitHubData } from "@/lib/ingestion/githubIngestion";
-import { verifyDatabaseSchema } from "@/lib/db/healthCheck";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +11,10 @@ export const dynamic = "force-dynamic";
  * GET /auth/callback
  * Handles OAuth callback from Supabase / GitHub.
  * Verifies the GitHub access token against GitHub API, persists encrypted account,
- * triggers initial ingestion, and redirects safely.
+ * registers initial SyncRun (PENDING), and redirects safely.
  */
 export async function GET(request: Request) {
+  const requestId = crypto.randomUUID();
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
@@ -27,63 +26,47 @@ export async function GET(request: Request) {
 
   // 1. Handle cancelled authorization or OAuth error from provider
   if (error) {
-    console.warn(`[GITHUB_OAUTH] Provider error: ${error} - ${errorDescription}`);
+    console.warn(`[GITHUB_OAUTH] [${requestId}] Provider error: ${error} - ${errorDescription}`);
     const errorCode = error === "access_denied" ? "access_denied" : "OAUTH_PROVIDER_ERROR";
     const descParam = encodeURIComponent(errorDescription || error);
     return NextResponse.redirect(
-      `${origin}/github-connect?error=${errorCode}&error_description=${descParam}`
+      `${origin}/github-connect?error=${errorCode}&error_description=${descParam}&request_id=${requestId}`
     );
   }
 
-  // 2. Early database schema health check
-  try {
-    const schemaHealth = await verifyDatabaseSchema();
-    if (!schemaHealth.healthy) {
-      console.error("[GITHUB_OAUTH] Database schema verification failed:", schemaHealth.missingTables || schemaHealth.error);
-      return NextResponse.redirect(
-        `${origin}/github-connect?error=DATABASE_SCHEMA_MISMATCH&error_description=Database+schema+requires+synchronization`
-      );
-    }
-  } catch (schemaErr: any) {
-    console.error("[GITHUB_OAUTH] Database schema check threw:", schemaErr?.message);
-    return NextResponse.redirect(
-      `${origin}/github-connect?error=DATABASE_SCHEMA_MISMATCH&error_description=Database+schema+verification+error`
-    );
-  }
-
-  // 3. Exchange authorization code for Supabase session
+  // 2. Exchange authorization code for Supabase session
   if (code) {
     try {
-      console.log("[GITHUB_OAUTH] Exchanging authorization code for session...");
+      console.log(`[GITHUB_OAUTH] [${requestId}] Exchanging authorization code for session...`);
       const supabase = createClient();
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
       if (exchangeError || !data.user) {
-        console.error("[GITHUB_OAUTH] Code exchange failed:", exchangeError?.message);
+        console.error(`[GITHUB_OAUTH] [${requestId}] Code exchange failed:`, exchangeError?.message);
         const desc = encodeURIComponent(exchangeError?.message || "OAuth code exchange failed");
         return NextResponse.redirect(
-          `${origin}/github-connect?error=OAUTH_CODE_EXCHANGE_FAILED&error_description=${desc}`
+          `${origin}/github-connect?error=OAUTH_CODE_EXCHANGE_FAILED&error_description=${desc}&request_id=${requestId}`
         );
       }
 
-      console.log(`[GITHUB_OAUTH] Session established for Supabase user ${data.user.id}`);
+      console.log(`[GITHUB_OAUTH] [${requestId}] Session established for Supabase user ${data.user.id}`);
       const profile = await ensureUserProfile(data.user);
       if (!profile) {
-        console.error("[GITHUB_OAUTH] Could not resolve UserProfile for user:", data.user.id);
+        console.error(`[GITHUB_OAUTH] [${requestId}] Could not resolve UserProfile for user:`, data.user.id);
         return NextResponse.redirect(
-          `${origin}/github-connect?error=SUPABASE_SESSION_MISSING&error_description=Could+not+resolve+authenticated+user+profile`
+          `${origin}/github-connect?error=SUPABASE_SESSION_MISSING&error_description=Could+not+resolve+authenticated+user+profile&request_id=${requestId}`
         );
       }
 
       const providerToken = data.session?.provider_token;
 
-      // 4. Verify the token directly with GitHub API before persisting
+      // 3. Verify the token directly with GitHub API before persisting
       if (providerToken) {
-        console.log("[GITHUB_OAUTH] Verifying provider_token with GitHub API GET /user...");
+        console.log(`[GITHUB_OAUTH] [${requestId}] Verifying provider_token with GitHub API GET /user...`);
         const verification = await verifyGitHubAccessToken(providerToken);
 
         if (verification.valid && verification.user) {
-          console.log(`[GITHUB_OAUTH] Verified GitHub identity @${verification.user.login} (ID: ${verification.user.id})`);
+          console.log(`[GITHUB_OAUTH] [${requestId}] Verified GitHub identity @${verification.user.login} (ID: ${verification.user.id})`);
 
           // Safe ownership check: prevent taking over an account bound to another user
           const existingAccount = await prisma.gitHubAccount.findUnique({
@@ -91,9 +74,9 @@ export async function GET(request: Request) {
           });
 
           if (existingAccount && existingAccount.userId !== profile.id) {
-            console.warn(`[GITHUB_OAUTH] GitHub ID ${verification.user.id} is already linked to user profile ${existingAccount.userId}`);
+            console.warn(`[GITHUB_OAUTH] [${requestId}] GitHub ID ${verification.user.id} is already linked to user profile ${existingAccount.userId}`);
             return NextResponse.redirect(
-              `${origin}/github-connect?error=GITHUB_ACCOUNT_ALREADY_LINKED&error_description=This+GitHub+account+is+already+linked+to+another+Gitrium+user.`
+              `${origin}/github-connect?error=GITHUB_ACCOUNT_ALREADY_LINKED&error_description=This+GitHub+account+is+already+linked+to+another+Gitrium+user.&request_id=${requestId}`
             );
           }
 
@@ -143,15 +126,10 @@ export async function GET(request: Request) {
 
           invalidateUserProfileCache(profile.id);
 
-          // 5. Automatically trigger repository ingestion asynchronously (non-blocking)
-          syncUserGitHubData(profile.id, providerToken).catch((syncErr: any) => {
-            console.warn("[GITHUB_SYNC] Background ingestion notification:", syncErr?.message);
-          });
-
-          console.log(`[GITHUB_OAUTH] Successfully connected @${verification.user.login}. Redirecting to ${next}`);
+          console.log(`[GITHUB_OAUTH] [${requestId}] Successfully connected @${verification.user.login}. Redirecting to ${next}`);
           return NextResponse.redirect(`${origin}${next}`);
         } else {
-          console.error(`[GITHUB_OAUTH] Token verification failed: ${verification.error} - ${verification.errorMessage}`);
+          console.error(`[GITHUB_OAUTH] [${requestId}] Token verification failed: ${verification.error} - ${verification.errorMessage}`);
           const errCategory =
             verification.error === "RATE_LIMITED"
               ? "GITHUB_RATE_LIMITED"
@@ -160,7 +138,7 @@ export async function GET(request: Request) {
               : "GITHUB_TOKEN_INVALID";
           const desc = encodeURIComponent(verification.errorMessage || "Token validation failed");
           return NextResponse.redirect(
-            `${origin}/github-connect?error=${errCategory}&error_description=${desc}`
+            `${origin}/github-connect?error=${errCategory}&error_description=${desc}&request_id=${requestId}`
           );
         }
       } else {
@@ -171,25 +149,35 @@ export async function GET(request: Request) {
         });
 
         if (existingAccount?.accessToken && existingAccount.connectionStatus === "connected") {
-          console.log("[GITHUB_OAUTH] Existing active connected GitHub account confirmed. Redirecting.");
+          console.log(`[GITHUB_OAUTH] [${requestId}] Existing active connected GitHub account confirmed. Redirecting.`);
           return NextResponse.redirect(`${origin}${next}`);
         }
 
-        console.warn("[GITHUB_OAUTH] No provider_token received from Supabase OAuth exchange.");
+        console.warn(`[GITHUB_OAUTH] [${requestId}] No provider_token received from Supabase OAuth exchange.`);
         return NextResponse.redirect(
-          `${origin}/github-connect?error=GITHUB_TOKEN_MISSING&error_description=No+GitHub+access+token+returned+by+OAuth+session.+Please+re-authorize+with+repo+and+user+permissions.`
+          `${origin}/github-connect?error=GITHUB_TOKEN_MISSING&error_description=No+GitHub+access+token+returned+by+OAuth+session.+Please+re-authorize+with+repo+and+user+permissions.&request_id=${requestId}`
         );
       }
     } catch (err: any) {
-      console.error("[GITHUB_OAUTH] Unexpected error during callback processing:", err);
+      console.error(`[GITHUB_OAUTH] [${requestId}] Unexpected error during callback processing:`, {
+        code: err?.code,
+        message: err?.message,
+      });
+
+      let errCategory = "OAUTH_CALLBACK_ERROR";
+      if (err?.code === "P2021") errCategory = "DATABASE_SCHEMA_MISSING";
+      else if (err?.code === "P1001") errCategory = "DATABASE_UNREACHABLE";
+      else if (err?.code === "P1008") errCategory = "DATABASE_TIMEOUT";
+      else if (err?.code === "P1000") errCategory = "DATABASE_AUTH_FAILED";
+
       const desc = encodeURIComponent(err?.message || "Unexpected error during authorization callback");
       return NextResponse.redirect(
-        `${origin}/github-connect?error=OAUTH_CALLBACK_ERROR&error_description=${desc}`
+        `${origin}/github-connect?error=${errCategory}&error_description=${desc}&request_id=${requestId}`
       );
     }
   }
 
-  // 6. Fallback for returning sessions without code
+  // 4. Fallback for returning sessions without code
   try {
     const supabase = createClient();
     const {
@@ -210,7 +198,7 @@ export async function GET(request: Request) {
 
     return NextResponse.redirect(`${origin}/github-connect`);
   } catch (err) {
-    console.error("[GITHUB_OAUTH] General callback fallback error:", err);
+    console.error(`[GITHUB_OAUTH] [${requestId}] General callback fallback error:`, err);
     return NextResponse.redirect(`${origin}/github-connect`);
   }
 }

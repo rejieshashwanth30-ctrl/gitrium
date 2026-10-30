@@ -59,6 +59,33 @@ async function executeSync(
 
   let syncRunId: string | null = null;
   try {
+    // Database-backed concurrency guard: check if another instance/tab is actively syncing
+    const inProgressRun = await prisma.syncRun.findFirst({
+      where: {
+        userId,
+        status: "SYNCING",
+        startedAt: { gte: new Date(Date.now() - 3 * 60 * 1000) },
+      },
+    });
+
+    if (inProgressRun) {
+      console.log(`[GitHub Sync] In-progress sync ${inProgressRun.id} active for user ${userId}. Returning in-progress result.`);
+      return {
+        repositoriesCount: inProgressRun.repositoriesProcessed,
+        commitsCount: inProgressRun.commitsProcessed,
+        pullRequestsCount: inProgressRun.pullRequestsProcessed,
+        technologiesCount: 0,
+        syncedAt: inProgressRun.startedAt,
+        status: "PARTIAL",
+        coverage: {
+          repositories: "PARTIAL",
+          commits: "PARTIAL",
+          pullRequests: "PARTIAL",
+          languages: "PARTIAL",
+        },
+      };
+    }
+
     const pendingRun = await prisma.syncRun.findFirst({
       where: { userId, status: "PENDING" },
       orderBy: { startedAt: "desc" },

@@ -51,8 +51,14 @@ function getSafeErrorMessage(error: string | null, description: string | null): 
       return desc && desc !== errCode
         ? `OAuth callback notice: ${desc}`
         : "An unexpected error occurred during GitHub authorization callback. Please try again.";
-    case "DATABASE_SCHEMA_MISMATCH":
-      return "The database schema is currently synchronizing. Please try connecting again in a moment.";
+    case "DATABASE_UNREACHABLE":
+      return "Unable to reach PostgreSQL database. Please try again in a moment.";
+    case "DATABASE_TIMEOUT":
+      return "Database connection timed out. Please try again shortly.";
+    case "DATABASE_AUTH_FAILED":
+      return "Database authentication failed. Please verify database credentials.";
+    case "DATABASE_SCHEMA_MISSING":
+      return "Gitrium database schema is not ready. Please apply database migrations.";
     case "GITHUB_ACCOUNT_ALREADY_LINKED":
       return "This GitHub account is already connected to another Gitrium user profile.";
     case "access_denied":
