@@ -47,7 +47,7 @@ const WORKFLOW_STAGES = [
     sub: "Demonstrated Mastery",
     icon: Layers,
     details:
-      "Synthesized framework proficiency scores backed strictly by production commits and tests.",
+      "Synthesized technology evidence strength scores backed strictly by production commits and tests.",
     metric: "14 Quantified Skills",
   },
   {

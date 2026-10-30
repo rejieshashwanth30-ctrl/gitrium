@@ -123,7 +123,7 @@ export default function ReportDetailPage() {
   return (
     <div className="min-h-screen bg-[#F7F6F1] text-[#17201B] py-8 px-4 sm:px-6 lg:px-8">
       {/* Top Bar for Navigation and Actions (Hidden in Print) */}
-      <div className="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
+      <div className="max-w-4xl mx-auto mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 no-print">
         <Link
           href="/reports"
           className="text-xs font-mono text-[#56635C] hover:text-[#159A72] flex items-center gap-1.5 font-medium"
@@ -132,26 +132,41 @@ export default function ReportDetailPage() {
           <span>Back to Reports Vault</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleDownloadJSON} className="gap-1.5 text-xs border-[#DDE1DC] text-[#17201B]">
-            <Download className="w-3.5 h-3.5 text-[#159A72]" />
-            <span>JSON Audit Data</span>
+        <div className="grid grid-cols-3 sm:flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadJSON}
+            className="gap-1.5 text-xs border-[#DDE1DC] text-[#17201B] px-2.5 sm:px-3 justify-center h-9 font-mono"
+          >
+            <Download className="w-3.5 h-3.5 text-[#159A72] shrink-0" />
+            <span className="truncate">JSON Data</span>
           </Button>
 
-          <Button variant="secondary" size="sm" onClick={handlePrint} className="gap-1.5 text-xs border-[#DDE1DC] text-[#17201B]">
-            <Printer className="w-3.5 h-3.5 text-[#17201B]" />
-            <span>Print / Save PDF</span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handlePrint}
+            className="gap-1.5 text-xs border-[#DDE1DC] text-[#17201B] px-2.5 sm:px-3 justify-center h-9 font-mono"
+          >
+            <Printer className="w-3.5 h-3.5 text-[#17201B] shrink-0" />
+            <span className="truncate">Print / PDF</span>
           </Button>
 
-          <Button variant="emerald" size="sm" onClick={handleShare} className="gap-1.5 text-xs bg-[#087453] hover:bg-[#159A72] text-white">
-            <Share2 className="w-3.5 h-3.5" />
+          <Button
+            variant="emerald"
+            size="sm"
+            onClick={handleShare}
+            className="gap-1.5 text-xs bg-[#087453] hover:bg-[#159A72] text-white px-2.5 sm:px-3 justify-center h-9 font-mono"
+          >
+            <Share2 className="w-3.5 h-3.5 shrink-0" />
             <span>{copied ? "Copied" : "Share"}</span>
           </Button>
         </div>
       </div>
 
       {/* Main Printable Document Canvas */}
-      <div className="max-w-4xl mx-auto rounded-[12px] border border-[#DDE1DC] bg-white p-7 sm:p-10 shadow-card space-y-7">
+      <div className="max-w-4xl mx-auto rounded-[12px] border border-[#DDE1DC] bg-white p-5 sm:p-10 shadow-card space-y-6 sm:space-y-7">
         {/* Document Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-[#EFEEE8]">
           <div>
@@ -162,7 +177,7 @@ export default function ReportDetailPage() {
             </div>
           </div>
 
-          <div className="text-right font-mono text-xs text-[#7A857E] space-y-0.5">
+          <div className="text-left sm:text-right font-mono text-xs text-[#7A857E] space-y-1 w-full sm:w-auto">
             <div>
               <span className="text-[#7A857E]">Report ID: </span>
               <span className="text-[#17201B] font-bold">{reportData.id.slice(0, 16)}...</span>
@@ -185,23 +200,23 @@ export default function ReportDetailPage() {
         </div>
 
         {/* Overall Score Card */}
-        <div className="p-5 rounded-[8px] bg-[#F7F6F1] border border-[#DDE1DC] flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="space-y-1 text-center sm:text-left">
+        <div className="p-5 rounded-[8px] bg-[#F7F6F1] border border-[#DDE1DC] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div className="space-y-1 text-left">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#159A72]">
               Deterministic AST Synthesis Score
             </span>
             <h2 className="text-xl font-bold font-mono text-[#17201B]">Overall Evidence Score</h2>
             <p className="text-xs text-[#56635C] max-w-md">
-              Synthesized from {repoScope.length} audited repository history trees, commit depth, and framework manifests.
+              Synthesized from {repoScope.length} audited repository history {repoScope.length === 1 ? "tree" : "trees"}, commit depth, and framework manifests.
             </p>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="text-center font-mono">
+            <div className="text-left sm:text-center font-mono">
               <span className="text-4xl font-extrabold text-[#17201B]">
                 {totalCommits > 20 ? 94 : totalCommits > 5 ? 88 : 76}
               </span>
-              <span className="text-xs text-[#7A857E] block">/ 100</span>
+              <span className="text-xs text-[#7A857E] inline sm:block ml-1 sm:ml-0">/ 100</span>
             </div>
             <EvidenceStrengthBadge strength={totalCommits > 15 ? "Strong Evidence" : "Moderate Evidence"} />
           </div>
@@ -228,11 +243,11 @@ export default function ReportDetailPage() {
               <div className="text-base font-bold text-[#17201B] mt-0.5">{repoScope.length}</div>
             </div>
             <div className="p-3 rounded-[6px] bg-[#F7F6F1] border border-[#DDE1DC]">
-              <span className="text-[10px] text-[#7A857E] uppercase">Total Commits</span>
+              <span className="text-[10px] text-[#7A857E] uppercase">Indexed Commits</span>
               <div className="text-base font-bold text-[#17201B] mt-0.5">{totalCommits}</div>
             </div>
             <div className="p-3 rounded-[6px] bg-[#F7F6F1] border border-[#DDE1DC]">
-              <span className="text-[10px] text-[#7A857E] uppercase">Skills Proven</span>
+              <span className="text-[10px] text-[#7A857E] uppercase">Evidence-Backed Skills</span>
               <div className="text-base font-bold text-[#159A72] mt-0.5">{skills.length}</div>
             </div>
             <div className="p-3 rounded-[6px] bg-[#F7F6F1] border border-[#DDE1DC]">
@@ -260,7 +275,7 @@ export default function ReportDetailPage() {
                   <span className="text-[#56635C] ml-2 font-sans">({r.primaryLanguage || "Ecosystem"})</span>
                 </div>
                 <div className="text-[#7A857E]">
-                  <span>{r.commitCount || 0} verified commits</span>
+                  <span>{r.commitCount || 0} indexed commits</span>
                 </div>
               </div>
             ))}
@@ -270,7 +285,7 @@ export default function ReportDetailPage() {
         {/* Verified Skills Detected */}
         <div className="space-y-2">
           <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#7A857E]">
-            Verified Skill Competencies:
+            Evidence-Backed Skill Competencies:
           </h3>
           {skills.length === 0 ? (
             <p className="text-xs font-mono text-[#7A857E] p-3 rounded-[6px] bg-[#F7F6F1] border border-[#DDE1DC]">
@@ -290,7 +305,7 @@ export default function ReportDetailPage() {
                       <span className="text-[#56635C] ml-1.5">({sk.category || "Skill"})</span>
                     </div>
                   </div>
-                  <span className="font-bold text-[#159A72]">{sk.proficiencyScore || 85}% Proven</span>
+                  <span className="font-bold text-[#159A72]">{sk.proficiencyScore || 85}% Evidence Strength</span>
                 </div>
               ))}
             </div>
@@ -301,11 +316,11 @@ export default function ReportDetailPage() {
         <div className="pt-4 border-t border-[#EFEEE8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] font-mono text-[#7A857E]">
           <div>
             <span>Provenance Hash: </span>
-            <code className="text-[#17201B] bg-[#F7F6F1] px-1.5 py-0.5 rounded border border-[#DDE1DC]">
+            <code className="text-[#17201B] bg-[#F7F6F1] px-1.5 py-0.5 rounded border border-[#DDE1DC] break-all">
               {reportData.reportHash.slice(0, 32)}...
             </code>
           </div>
-          <span className="text-[#159A72] font-semibold">100% Cryptographically Verified</span>
+          <span className="text-[#159A72] font-semibold">Cryptographically Hash Verified</span>
         </div>
       </div>
     </div>

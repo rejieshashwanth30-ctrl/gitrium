@@ -259,7 +259,7 @@ export function DeveloperEvidenceGraph() {
 
             <div className="pt-4 border-t border-[#24352C] flex items-center justify-between text-xs font-mono text-[#7A857E]">
               <span>Verified Identity Match</span>
-              <span className="text-[#159A72] font-semibold">100% Proven</span>
+              <span className="text-[#159A72] font-semibold">Verified Author</span>
             </div>
           </div>
         </div>

@@ -167,7 +167,7 @@ export default function ProfilePage() {
               <div className="text-xl font-bold text-[#F7F6F1] mt-0.5">{totalPRs}</div>
             </div>
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C]">
-              <span className="text-[10px] text-[#7A857E] uppercase">Skills Proven</span>
+              <span className="text-[10px] text-[#7A857E] uppercase">Evidence Skills</span>
               <div className="text-xl font-bold text-[#159A72] mt-0.5">{skills.length}</div>
             </div>
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C]">

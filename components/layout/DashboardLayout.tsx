@@ -118,6 +118,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     };
   }, [mobileSidebarOpen]);
 
+  // Automatically close mobile drawer whenever the pathname changes
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [pathname]);
+
   return (
     <div className="min-h-screen bg-[#151A17] text-[#F7F6F1] antialiased selection:bg-[#DDF4EA] selection:text-[#087453]">
       {/* ==================================================================== */}
@@ -157,7 +162,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* MOBILE BACKDROP OVERLAY */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 bg-[#151A17]/80 backdrop-blur-xs z-40 md:hidden transition-opacity"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-200"
           onClick={() => setMobileSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -168,7 +173,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* ==================================================================== */}
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-30 w-64 h-screen border-r border-[#24352C] bg-[#151A17] text-[#A8B3AC] flex flex-col justify-between transition-transform duration-200 ease-in-out shadow-lg md:shadow-none",
+          "fixed top-0 bottom-0 left-0 z-50 md:z-30 w-72 max-w-[85vw] md:w-64 h-screen border-r border-[#24352C] bg-[#151A17] text-[#A8B3AC] flex flex-col justify-between transition-transform duration-200 ease-in-out shadow-2xl md:shadow-none",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >

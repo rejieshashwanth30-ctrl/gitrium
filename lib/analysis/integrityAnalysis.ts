@@ -52,7 +52,7 @@ export function computeIntegritySignals(params: {
         "No bulk artificial merge anomalies detected",
         "Chronological timestamps align with commit author headers",
       ],
-      confidenceInterval: "95% Confidence (p < 0.01)",
+      confidenceInterval: "High Evidence Confidence",
     },
     {
       id: "sig_authorship",
@@ -69,7 +69,7 @@ export function computeIntegritySignals(params: {
         `Primary author identity confirmed on ${repositoriesCount} repositories`,
         "Verified repository metadata and ownership mappings",
       ],
-      confidenceInterval: "98% Confidence (p < 0.001)",
+      confidenceInterval: "Strong Evidence Confidence",
     },
     {
       id: "sig_testing",
@@ -86,7 +86,7 @@ export function computeIntegritySignals(params: {
       findings: hasTestingEvidence
         ? ["Test frameworks identified in package manifests", "Assertion files detected"]
         : ["No primary test framework manifest found in root configuration", "Recommend adding test coverage"],
-      confidenceInterval: "90% Confidence",
+      confidenceInterval: hasTestingEvidence ? "Verified Testing Evidence" : "Evaluating Coverage",
     },
     {
       id: "sig_pr_dialogue",
@@ -105,7 +105,7 @@ export function computeIntegritySignals(params: {
         `${totalPRs} pull requests recorded in history`,
         "Feature branch isolation observed in repository commits",
       ],
-      confidenceInterval: "92% Confidence",
+      confidenceInterval: "Verifiable PR Provenance",
     },
   ];
 }

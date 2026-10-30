@@ -435,7 +435,7 @@ export function CareerIntelligenceSection() {
                       className="p-3 rounded-[6px] bg-[#F7F6F1] border border-[#DDE1DC] flex items-center justify-between text-xs"
                     >
                       <span className="text-[#17201B] font-semibold">{sk}</span>
-                      <span className="text-[#159A72] font-bold">PROVEN</span>
+                      <span className="text-[#159A72] font-bold">EVIDENCE</span>
                     </div>
                   )
                 )}

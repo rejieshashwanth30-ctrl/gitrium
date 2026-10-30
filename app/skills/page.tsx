@@ -102,7 +102,7 @@ export default function SkillsPage() {
             <p className="text-xs text-[#A8B3AC] font-mono max-w-md mx-auto">
               {!githubConnected
                 ? "Connect GitHub to begin your analysis and prove your engineering skills with real commit data."
-                : "Synchronize your active codebases to calculate deterministic proficiency scores and skill evidence."}
+                : "Synchronize your active codebases to calculate deterministic evidence strength scores and skill evidence."}
             </p>
             {!githubConnected ? (
               <div className="pt-2">
@@ -159,7 +159,7 @@ export default function SkillsPage() {
                   {/* Score Gauge */}
                   <div className="space-y-1.5 my-4">
                     <div className="flex justify-between text-xs font-mono">
-                      <span className="text-[#A8B3AC]">Proficiency Proven</span>
+                      <span className="text-[#A8B3AC]">Evidence Strength</span>
                       <span className="font-bold text-[#159A72]">{skill.proficiencyScore}%</span>
                     </div>
                     <div className="h-2 w-full bg-[#151A17] rounded-[3px] overflow-hidden border border-[#24352C]">
@@ -195,7 +195,7 @@ export default function SkillsPage() {
         >
           <div className="space-y-4 font-mono text-xs">
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C] flex items-center justify-between">
-              <span className="text-[#A8B3AC]">Deterministic Score:</span>
+              <span className="text-[#A8B3AC]">Evidence Strength Score:</span>
               <span className="text-sm font-bold text-[#159A72]">{selectedSkill.proficiencyScore}%</span>
             </div>
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C] flex items-center justify-between">

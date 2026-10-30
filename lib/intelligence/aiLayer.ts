@@ -49,7 +49,7 @@ export async function generateAIInterpretation(
   );
 
   // Generate deterministic evidence-traceable summary
-  const summary = `Empirical AST and commit analysis confirms ${developerName} demonstrates sustained implementation proficiency across ${repositories.length} audited codebases (${primaryLangs.join(", ")}). With ${totalCommits} verified commits and an aggregate code integrity rating of ${integrityScore}%, the evidence reflects atomic delivery patterns and modular software architecture.`;
+  const summary = `Empirical AST, repository structure, and commit-history analysis indicates ${developerName} demonstrates sustained implementation evidence across ${repositories.length} audited codebase${repositories.length === 1 ? "" : "s"} (${primaryLangs.join(", ")}). With ${totalCommits} verified commits and an aggregate code integrity rating of ${integrityScore}%, the evidence reflects atomic delivery patterns and modular software architecture.`;
 
   const strengths = [
     `Demonstrated codebase continuity in ${topSkills.slice(0, 2).join(" and ")}`,

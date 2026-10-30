@@ -149,13 +149,19 @@ export function AnalysisScannerModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-[#EFEEE8]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#EFEEE8]">
           <span className="text-xs text-[#7A857E] font-mono">
             {isDone ? "Evidence compilation complete." : "Deterministic tree extraction running..."}
           </span>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={onClose} disabled={!isDone}>
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={!isDone}
+              className="px-3.5 h-10 sm:h-9 text-xs font-mono shrink-0"
+            >
               Close
             </Button>
             <Button
@@ -163,11 +169,11 @@ export function AnalysisScannerModal({
               size="sm"
               disabled={!isDone}
               onClick={handleViewReport}
-              className="gap-1.5 bg-[#087453] hover:bg-[#159A72] text-white"
+              className="gap-2 bg-[#087453] hover:bg-[#159A72] text-white whitespace-nowrap px-4 h-10 sm:h-9 text-xs font-mono shrink-0 flex-1 sm:flex-initial"
             >
-              <ShieldCheck className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4 shrink-0" />
               <span>View Audit Report</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
             </Button>
           </div>
         </div>

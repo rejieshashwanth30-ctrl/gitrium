@@ -172,14 +172,14 @@ function DashboardHeaderAndTelemetry({
 
           <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono">
             <div className="text-3xl sm:text-4xl font-extrabold text-[#159A72]">{skillsCount}</div>
-            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Skills Proven</div>
-            <div className="text-[11px] text-[#7A857E] mt-0.5">Deterministic AST Proof</div>
+            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Evidence Skills</div>
+            <div className="text-[11px] text-[#7A857E] mt-0.5">Deterministic AST Evidence</div>
           </div>
 
           <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono">
             <div className="text-3xl sm:text-4xl font-extrabold text-[#F7F6F1]">{evidenceSignalsCount}</div>
             <div className="text-xs font-bold text-[#A8B3AC] mt-1">Evidence Signals</div>
-            <div className="text-[11px] text-[#D97745] mt-0.5">Cryptographic Nodes</div>
+            <div className="text-[11px] text-[#D97745] mt-0.5">Audited Evidence Nodes</div>
           </div>
         </div>
       </div>
