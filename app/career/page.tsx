@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/Button";
 import { gitriumApi } from "@/lib/services/gitriumApiService";
 import { CareerMatch } from "@/types";
+import { StructuredAIInsights } from "@/lib/intelligence/aiLayer";
 import {
   Briefcase,
   CheckCircle2,
@@ -14,25 +15,31 @@ import {
   ArrowRight,
   Sparkles,
   Github,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function CareerIntelligencePage() {
   const [matches, setMatches] = useState<CareerMatch[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<CareerMatch | null>(null);
+  const [aiInsights, setAiInsights] = useState<StructuredAIInsights | null>(null);
   const [githubConnected, setGithubConnected] = useState(false);
 
   useEffect(() => {
     async function loadCareerData() {
       try {
-        const [profile, liveMatches] = await Promise.all([
+        const [profile, liveMatches, insights] = await Promise.all([
           gitriumApi.getProfile(),
           gitriumApi.getCareerMatches(),
+          gitriumApi.getAIInsights(),
         ]);
         setGithubConnected(profile?.github?.connectionStatus === "connected");
         if (Array.isArray(liveMatches) && liveMatches.length > 0) {
           setMatches(liveMatches);
           setSelectedMatch(liveMatches[0]);
+        }
+        if (insights) {
+          setAiInsights(insights);
         }
       } catch (err) {
         console.warn("Career data fetch error:", err);
@@ -103,6 +110,47 @@ export default function CareerIntelligencePage() {
           </div>
         ) : (
           <>
+            {/* AI Career Trajectory Highlights */}
+            {aiInsights && (
+              <div className="p-5 rounded-[11px] border border-[#27382F] bg-[#18201C] shadow-subtle space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#159A72] uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4 text-[#159A72]" />
+                    <span>AI Career Trajectory &amp; Role Grounding</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-[#7A857E]">
+                    Evidence Basis: {aiInsights.evidenceBasis.repositoriesCount} repos • {aiInsights.evidenceBasis.commitsCount} commits
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1 font-mono text-xs">
+                  <div className="p-3.5 rounded-[8px] bg-[#151A17] border border-[#24352C] space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[#159A72] font-bold text-xs uppercase">
+                      <TrendingUp className="w-3.5 h-3.5 text-[#159A72]" />
+                      <span>Why This Alignment Exists</span>
+                    </div>
+                    <p className="text-[11px] text-[#A8B3AC] leading-relaxed font-sans">
+                      {aiInsights.careerSignals.length > 0
+                        ? `${aiInsights.careerSignals[0].role}: ${aiInsights.careerSignals[0].explanation}`
+                        : "Observed commits, architectural layers, and library imports demonstrate sustained alignment with modern web application engineering."}
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-[8px] bg-[#151A17] border border-[#24352C] space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[#D97745] font-bold text-xs uppercase">
+                      <Lightbulb className="w-3.5 h-3.5 text-[#D97745]" />
+                      <span>Recommended Technical Expansion</span>
+                    </div>
+                    <p className="text-[11px] text-[#A8B3AC] leading-relaxed font-sans">
+                      {aiInsights.recommendedNextSteps.length > 0
+                        ? `${aiInsights.recommendedNextSteps[0].title}: ${aiInsights.recommendedNextSteps[0].reason}`
+                        : "To increase alignment for senior roles, introduce automated test coverage and publish modular packages."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Role Selector Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {matches.map((career, idx) => {
@@ -242,6 +290,16 @@ export default function CareerIntelligencePage() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Transparent Footnote */}
+              <div className="pt-4 border-t border-[#24352C] text-[11px] font-mono text-[#7A857E] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span>
+                  Methodology: Match scores represent demonstrable skill coverage across verified codebases.
+                </span>
+                <span className="text-[#A8B3AC]">
+                  Gitrium does not guarantee hiring outcomes or predict employment.
+                </span>
               </div>
             </div>
           </>

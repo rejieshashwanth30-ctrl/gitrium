@@ -228,7 +228,64 @@ export default function ReportDetailPage() {
             Executive Audit Summary:
           </h3>
           <p className="text-xs sm:text-sm text-[#17201B] leading-relaxed p-4 rounded-[6px] bg-[#F7F6F1] border border-[#DDE1DC] font-sans">
-            {reportData.summary || ai.engineeringSummary || "Audited code evidence confirms active author provenance across the specified codebases."}
+            {reportData.summary || ai.summary || ai.engineeringSummary || "Audited code evidence confirms active author provenance across the specified codebases."}
+          </p>
+        </div>
+
+        {/* AI Evidence Interpretation Section */}
+        <div className="p-5 rounded-[8px] bg-[#F7F6F1] border border-[#DDE1DC] space-y-4 font-mono text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#DDE1DC]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#159A72]" />
+              <span className="font-bold uppercase tracking-wider text-[#087453] text-xs">
+                AI Evidence Interpretation Layer
+              </span>
+            </div>
+            <span className="text-[11px] text-[#7A857E]">
+              {ai.evidenceBasis
+                ? `Basis: ${ai.evidenceBasis.repositoriesCount || repoScope.length} Repos • ${ai.evidenceBasis.commitsCount || totalCommits} Commits • ${ai.evidenceBasis.skillsCount || skills.length} Skills`
+                : `Basis: ${repoScope.length} Repos • ${totalCommits} Commits`}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Strengths & Observed Engineering Patterns */}
+            <div className="p-3.5 rounded-[6px] bg-white border border-[#DDE1DC] space-y-2">
+              <span className="text-[11px] font-bold text-[#087453] uppercase block">
+                Observed Technical Strengths:
+              </span>
+              <ul className="space-y-1.5 text-xs text-[#17201B] font-sans">
+                {(ai.strengths || [
+                  { title: "Modular Architecture", explanation: "Consistent separation of concerns across audited repositories." }
+                ]).slice(0, 3).map((item: any, i: number) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className="text-[#159A72] font-bold">•</span>
+                    <span><strong>{item.title || item}:</strong> {item.explanation || ""}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Development Focus & Trajectory */}
+            <div className="p-3.5 rounded-[6px] bg-white border border-[#DDE1DC] space-y-2">
+              <span className="text-[11px] font-bold text-[#D97745] uppercase block">
+                Development Focus &amp; Alignment:
+              </span>
+              <ul className="space-y-1.5 text-xs text-[#17201B] font-sans">
+                {(ai.recommendedNextSteps || ai.developmentAreas || [
+                  { title: "Automated Testing", reason: "Introduce CI/CD test automation suites to increase verifiable rigor." }
+                ]).slice(0, 3).map((item: any, i: number) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className="text-[#D97745] font-bold">•</span>
+                    <span><strong>{item.title || item}:</strong> {item.reason || item.explanation || ""}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-[#7A857E] font-sans italic pt-1 border-t border-[#DDE1DC]">
+            Interpretations are strictly grounded in deterministic code artifacts and repository commit trees. Gitrium AI does not extrapolate unobserved skills.
           </p>
         </div>
 

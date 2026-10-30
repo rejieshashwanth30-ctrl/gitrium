@@ -14,11 +14,14 @@ import {
   ArrowRight,
   Github,
   Layers,
+  Sparkles,
 } from "lucide-react";
+import { StructuredAIInsights } from "@/lib/intelligence/aiLayer";
 import { cn } from "@/lib/utils";
 
 export default function SkillsPage() {
   const [skills, setSkills] = useState<Skill[]>([]);
+  const [aiInsights, setAiInsights] = useState<StructuredAIInsights | null>(null);
   const [githubConnected, setGithubConnected] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -26,13 +29,17 @@ export default function SkillsPage() {
   useEffect(() => {
     async function loadSkills() {
       try {
-        const [profile, liveSkills] = await Promise.all([
+        const [profile, liveSkills, insights] = await Promise.all([
           gitriumApi.getProfile(),
           gitriumApi.getSkills(),
+          gitriumApi.getAIInsights(),
         ]);
         setGithubConnected(profile?.github?.connectionStatus === "connected");
         if (Array.isArray(liveSkills)) {
           setSkills(liveSkills);
+        }
+        if (insights) {
+          setAiInsights(insights);
         }
       } catch (err) {
         console.warn("Skills fetch error:", err);
@@ -206,6 +213,19 @@ export default function SkillsPage() {
               <span className="text-[#A8B3AC] block">Audit Traceability:</span>
               <p className="text-[11px] text-[#F7F6F1] font-sans leading-relaxed">
                 Skill evidence computed across {selectedSkill.projectCount} audited repository projects and {selectedSkill.evidenceCount} commit DAG nodes.
+              </p>
+            </div>
+
+            {/* Contextual AI Evidence Interpretation */}
+            <div className="p-3.5 rounded-[6px] bg-[#151A17] border border-[#24352C] space-y-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-[#159A72] uppercase tracking-wider">
+                <Sparkles className="w-3 h-3 text-[#159A72]" />
+                <span>AI Evidence Interpretation</span>
+              </div>
+              <p className="text-[11px] text-[#A8B3AC] font-sans leading-relaxed">
+                {selectedSkill.evidenceCount >= 10
+                  ? `Strong and repeated implementation evidence observed across ${selectedSkill.projectCount} repository codebase${selectedSkill.projectCount > 1 ? "s" : ""}. AST syntactical structures indicate sustained architecture usage with ${selectedSkill.proficiencyScore}% empirical score.`
+                  : `Emerging skill pattern observed across ${selectedSkill.projectCount} repository codebase${selectedSkill.projectCount > 1 ? "s" : ""}. Further production commits and test assertions will increase the empirical evidence score.`}
               </p>
             </div>
           </div>

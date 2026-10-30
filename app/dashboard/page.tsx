@@ -9,8 +9,10 @@ import { ContributionHeatmap } from "@/components/charts/ContributionHeatmap";
 import { DeveloperEvidenceGraph } from "@/components/graphs/DeveloperEvidenceGraph";
 import { IntegrityScoreGauge } from "@/components/integrity/IntegrityScoreGauge";
 import { AnalysisScannerModal } from "@/components/analysis/AnalysisScannerModal";
+import { AiInterpretationSection } from "@/components/intelligence/AiInterpretationSection";
 import { gitriumApi } from "@/lib/services/gitriumApiService";
 import { Repository, Skill } from "@/types";
+import { StructuredAIInsights } from "@/lib/intelligence/aiLayer";
 import {
   ShieldCheck,
   ArrowRight,
@@ -196,6 +198,8 @@ export default function DashboardPage() {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [aiInsights, setAiInsights] = useState<StructuredAIInsights | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [summaryMetrics, setSummaryMetrics] = useState({
     repositoriesCount: 0,
     totalCommits: 0,
@@ -224,10 +228,31 @@ export default function DashboardPage() {
           evidenceSignalsCount: summary.evidenceSignalsCount,
         });
       }
+
+      // Fetch AI evidence interpretation in background
+      setIsAiLoading(true);
+      gitriumApi.getAIInsights().then((insights) => {
+        setAiInsights(insights);
+        setIsAiLoading(false);
+      }).catch(() => {
+        setIsAiLoading(false);
+      });
     } catch (err) {
       console.warn("Live dashboard fetch error:", err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRefreshAI = async () => {
+    setIsAiLoading(true);
+    try {
+      const fresh = await gitriumApi.getAIInsights(true);
+      setAiInsights(fresh);
+    } catch (e) {
+      console.warn("Failed to refresh AI interpretation:", e);
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -286,6 +311,14 @@ export default function DashboardPage() {
           evidenceSignalsCount={evidenceSignalsCount}
           isSyncing={isSyncing}
           onSync={handleTriggerSync}
+        />
+
+        {/* AI Evidence Interpretation Layer */}
+        <AiInterpretationSection
+          insights={aiInsights}
+          isLoading={isAiLoading && !aiInsights}
+          onRefresh={handleRefreshAI}
+          isRefreshing={isAiLoading}
         />
 
         {/* 17. Contribution Activity Cadence (Dark Graphite Heatmap) */}

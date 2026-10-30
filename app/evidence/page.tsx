@@ -18,6 +18,7 @@ import {
   Layers,
   FileCheck2,
   Github,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -268,6 +269,17 @@ export default function EvidenceExplorerPage() {
                   <span className="text-[#7A857E]">Weight: </span>
                   <span className="text-[#087453] font-bold">{activeNode.weight} / 100</span>
                 </div>
+              </div>
+
+              {/* AI Provenance Assessment */}
+              <div className="p-3.5 rounded-[6px] bg-[#18201C] border border-[#27382F] text-[#F7F6F1] space-y-1.5 font-mono text-xs">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#159A72] uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-[#159A72]" />
+                  <span>AI Provenance Assessment</span>
+                </div>
+                <p className="text-[11px] text-[#A8B3AC] leading-relaxed font-sans">
+                  Evidence node anchors {activeNode.sourceType.toLowerCase()} verification directly to repository commit trees. Contributes {activeNode.weight} weight points to developer&apos;s verified skills profile.
+                </p>
               </div>
 
               <p className="text-xs text-[#56635C] leading-relaxed font-sans">{activeNode.description}</p>

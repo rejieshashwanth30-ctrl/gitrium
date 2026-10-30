@@ -7,6 +7,7 @@ import {
   AnalysisReport,
   CareerMatch,
 } from "@/types";
+import { StructuredAIInsights } from "@/lib/intelligence/aiLayer";
 
 export interface ContributionData {
   totalCommits: number;
@@ -57,6 +58,7 @@ export interface IGitriumService {
   triggerGitHubSync(): Promise<{ success: boolean; message: string }>;
   selectRepositories(repositoryIds: string[]): Promise<{ success: boolean; selectedCount: number }>;
   generateReport(repositoryId?: string, repositoryIds?: string[]): Promise<{ success: boolean; reportId: string }>;
+  getAIInsights(forceRefresh?: boolean): Promise<StructuredAIInsights | null>;
   clearCache(prefix?: string): void;
 }
 
@@ -652,6 +654,27 @@ class ProductionGitriumApiService implements IGitriumService {
     } catch (e: any) {
       this.clearCache();
       return { success: false, reportId: "" };
+    }
+  }
+
+  async getAIInsights(forceRefresh: boolean = false): Promise<StructuredAIInsights | null> {
+    if (!forceRefresh) {
+      const cached = this.getCached<StructuredAIInsights>("ai_insights_cache");
+      if (cached) return cached;
+    }
+    try {
+      const url = forceRefresh ? "/api/intelligence?force=true" : "/api/intelligence";
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data?.insights) {
+        this.setCache("ai_insights_cache", data.insights);
+        return data.insights;
+      }
+      return null;
+    } catch (e) {
+      console.warn("Failed to fetch AI insights:", e);
+      return null;
     }
   }
 }
