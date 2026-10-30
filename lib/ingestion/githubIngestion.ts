@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/db/prisma";
 import { createGitHubClient } from "@/lib/github/client";
-import { fetchUserRepositories } from "@/lib/github/repositories";
-import { fetchRepositoryLanguages } from "@/lib/github/languages";
-import { fetchRepositoryCommits } from "@/lib/github/commits";
-import { fetchRepositoryPullRequests } from "@/lib/github/pullRequests";
+import { fetchUserRepositories, NormalizedRepository } from "@/lib/github/repositories";
+import { fetchRepositoryLanguages, NormalizedLanguage } from "@/lib/github/languages";
+import { fetchRepositoryCommits, NormalizedCommit } from "@/lib/github/commits";
+import { fetchRepositoryPullRequests, NormalizedPullRequest } from "@/lib/github/pullRequests";
 import { detectTechnologiesFromRepository } from "@/lib/analysis/technologyAnalysis";
 import { decryptToken } from "@/lib/security/encryption";
+import { verifyGitHubAccessToken } from "@/lib/github/verifyToken";
+import { invalidateUserProfileCache } from "@/lib/auth/profileService";
 
 export interface SyncResult {
   repositoriesCount: number;
@@ -23,6 +25,9 @@ export interface SyncResult {
   errors?: string[];
 }
 
+// In-memory concurrency guard to prevent duplicate concurrent sync jobs for the same user
+const activeSyncJobs = new Map<string, Promise<SyncResult>>();
+
 /**
  * Ingests and synchronizes real GitHub data for an authenticated user.
  * Normalizes and stores evidence while preventing duplicates and handling partial failures.
@@ -31,10 +36,27 @@ export async function syncUserGitHubData(
   userId: string,
   githubAccessToken?: string
 ): Promise<SyncResult> {
+  // Concurrency guard: return existing in-flight job if one is already running
+  if (activeSyncJobs.has(userId)) {
+    console.log(`[GitHub Sync] In-flight sync already active for user ${userId}, awaiting existing job.`);
+    return activeSyncJobs.get(userId)!;
+  }
+
+  const syncPromise = executeSync(userId, githubAccessToken).finally(() => {
+    activeSyncJobs.delete(userId);
+  });
+
+  activeSyncJobs.set(userId, syncPromise);
+  return syncPromise;
+}
+
+async function executeSync(
+  userId: string,
+  githubAccessToken?: string
+): Promise<SyncResult> {
   const syncedAt = new Date();
   const errors: string[] = [];
 
-  // Coverage tracking
   const coverage: SyncResult["coverage"] = {
     repositories: "FAILED",
     commits: "FAILED",
@@ -42,13 +64,12 @@ export async function syncUserGitHubData(
     languages: "FAILED",
   };
 
-  // If token is encrypted, decrypt it for internal API communication
+  // 1. Resolve access token
   let token = githubAccessToken;
   if (token && token.includes(":")) {
     token = decryptToken(token);
   }
 
-  // If token not provided directly, retrieve from stored GitHubAccount
   if (!token) {
     try {
       const ghAccount = await prisma.gitHubAccount.findUnique({
@@ -58,21 +79,93 @@ export async function syncUserGitHubData(
       if (ghAccount?.accessToken) {
         token = decryptToken(ghAccount.accessToken);
       }
-    } catch {
-      // Proceed with unauthenticated or public rate limits
+    } catch (err: any) {
+      console.warn("[GitHub Sync] Database account token lookup failed:", err?.message);
     }
+  }
+
+  if (!token) {
+    return {
+      repositoriesCount: 0,
+      commitsCount: 0,
+      pullRequestsCount: 0,
+      technologiesCount: 0,
+      syncedAt,
+      status: "FAILED",
+      coverage,
+      errors: ["No GitHub access token found. Please connect your GitHub account."],
+    };
+  }
+
+  // 2. Validate token against GitHub API authenticated endpoint
+  console.log(`[GitHub Sync] Verifying access token against GitHub API for user ${userId}...`);
+  const verification = await verifyGitHubAccessToken(token);
+
+  if (!verification.valid) {
+    console.error(`[GitHub Sync] Token verification failed: ${verification.error} - ${verification.errorMessage}`);
+    
+    // Mark connection status as expired/disconnected in database
+    try {
+      await prisma.gitHubAccount.updateMany({
+        where: { userId },
+        data: { connectionStatus: "expired", updatedAt: new Date() },
+      });
+      await prisma.userProfile.update({
+        where: { id: userId },
+        data: { githubConnected: false, updatedAt: new Date() },
+      });
+      invalidateUserProfileCache(userId);
+    } catch {
+      // Ignore database cleanup errors
+    }
+
+    return {
+      repositoriesCount: 0,
+      commitsCount: 0,
+      pullRequestsCount: 0,
+      technologiesCount: 0,
+      syncedAt,
+      status: verification.error === "RATE_LIMITED" ? "RATE_LIMITED" : "FAILED",
+      coverage,
+      errors: [verification.errorMessage || "GitHub authorization expired. Please reconnect your GitHub account."],
+    };
+  }
+
+  console.log(`[GitHub Sync] Token verified successfully for @${verification.user?.login} (ID: ${verification.user?.id})`);
+
+  // Ensure GitHubAccount is kept up to date with verified username and identity
+  try {
+    if (verification.user) {
+      await prisma.gitHubAccount.updateMany({
+        where: { userId },
+        data: {
+          username: verification.user.login,
+          githubId: verification.user.id,
+          avatarUrl: verification.user.avatarUrl,
+          connectionStatus: "connected",
+          updatedAt: new Date(),
+        },
+      });
+    }
+  } catch {
+    // Non-fatal
   }
 
   const octokit = createGitHubClient(token);
 
-  // 1. Fetch user repositories (pagination handled inside fetchUserRepositories)
-  let repos: Awaited<ReturnType<typeof fetchUserRepositories>> = [];
+  // 3. Fetch user repositories (paginated up to 5 pages / 250 repositories)
+  let repos: NormalizedRepository[] = [];
   try {
-    repos = await fetchUserRepositories(octokit, 3);
-    coverage.repositories = repos.length > 0 ? "COMPLETE" : "PARTIAL";
+    repos = await fetchUserRepositories(octokit, 5);
+    coverage.repositories = repos.length > 0 ? "COMPLETE" : "COMPLETE"; // 0 repos is a valid empty set
+    console.log(`[GitHub Sync] Fetched ${repos.length} repositories from GitHub for @${verification.user?.login}`);
   } catch (err: any) {
     const isRateLimited = err?.status === 403 || err?.status === 429;
-    errors.push(isRateLimited ? "GitHub API rate limit exceeded during repository fetch" : "Repository fetch failed");
+    const errorMsg = isRateLimited
+      ? "GitHub API rate limit exceeded during repository fetch"
+      : err?.message || "Repository fetch failed";
+    errors.push(errorMsg);
+    console.error(`[GitHub Sync] Failed to fetch repositories:`, errorMsg);
     return {
       repositoriesCount: 0,
       commitsCount: 0,
@@ -82,6 +175,23 @@ export async function syncUserGitHubData(
       status: isRateLimited ? "RATE_LIMITED" : "FAILED",
       coverage,
       errors,
+    };
+  }
+
+  if (repos.length === 0) {
+    return {
+      repositoriesCount: 0,
+      commitsCount: 0,
+      pullRequestsCount: 0,
+      technologiesCount: 0,
+      syncedAt,
+      status: "COMPLETE",
+      coverage: {
+        repositories: "COMPLETE",
+        commits: "COMPLETE",
+        pullRequests: "COMPLETE",
+        languages: "COMPLETE",
+      },
     };
   }
 
@@ -95,20 +205,20 @@ export async function syncUserGitHubData(
   for (const repoData of repos) {
     const [owner, repoName] = repoData.fullName.split("/");
 
-    // 2. Fetch languages
-    let languages: Awaited<ReturnType<typeof fetchRepositoryLanguages>> = [];
+    // 4. Fetch languages from GitHub
+    let languages: NormalizedLanguage[] = [];
     try {
       languages = await fetchRepositoryLanguages(octokit, owner, repoName);
     } catch {
       languageFailures++;
     }
 
-    // 3. Detect technologies deterministically
+    // 5. Detect technologies deterministically
     const technologies = detectTechnologiesFromRepository(repoData.name, languages);
     totalTechnologies += technologies.length;
 
     try {
-      // 4. Safe upsert Repository record with deduplication
+      // 6. Safe upsert Repository record with deduplication
       const repository = await prisma.repository.upsert({
         where: {
           userId_githubRepoId: {
@@ -155,7 +265,7 @@ export async function syncUserGitHubData(
         },
       });
 
-      // 5. Upsert Languages
+      // 7. Upsert Languages
       for (const lang of languages) {
         await prisma.repositoryLanguage.upsert({
           where: {
@@ -177,7 +287,7 @@ export async function syncUserGitHubData(
         });
       }
 
-      // 6. Upsert Technologies
+      // 8. Upsert Technologies
       for (const tech of technologies) {
         await prisma.repositoryTechnology.upsert({
           where: {
@@ -199,10 +309,12 @@ export async function syncUserGitHubData(
         });
       }
 
-      // 7. Fetch Commits (for active non-fork repositories)
+      // 9. Fetch Commits (for active non-fork repositories)
+      let repoCommitsCount = 0;
       if (!repoData.isFork) {
         try {
-          const commits = await fetchRepositoryCommits(octokit, owner, repoName, 25);
+          const commits: NormalizedCommit[] = await fetchRepositoryCommits(octokit, owner, repoName, 30);
+          repoCommitsCount = commits.length;
           totalCommits += commits.length;
 
           for (const commit of commits) {
@@ -236,9 +348,11 @@ export async function syncUserGitHubData(
           commitFailures++;
         }
 
-        // 8. Fetch PRs
+        // 10. Fetch PRs
+        let repoPRsCount = 0;
         try {
-          const prs = await fetchRepositoryPullRequests(octokit, owner, repoName, 15);
+          const prs: NormalizedPullRequest[] = await fetchRepositoryPullRequests(octokit, owner, repoName, 20);
+          repoPRsCount = prs.length;
           totalPRs += prs.length;
 
           for (const pr of prs) {
@@ -270,9 +384,18 @@ export async function syncUserGitHubData(
         } catch {
           prFailures++;
         }
+
+        // Update repository counters directly for high-performance dashboard queries
+        await prisma.repository.update({
+          where: { id: repository.id },
+          data: {
+            commitCount: repoCommitsCount,
+            prCount: repoPRsCount,
+          },
+        });
       }
     } catch (dbErr: any) {
-      console.warn(`Database write skipped for ${repoData.fullName}:`, dbErr?.message || dbErr);
+      console.warn(`[GitHub Sync] Database write skipped for ${repoData.fullName}:`, dbErr?.message || dbErr);
     }
   }
 
@@ -285,16 +408,18 @@ export async function syncUserGitHubData(
         updatedAt: syncedAt,
       },
     });
+    invalidateUserProfileCache(userId);
   } catch {
-    // Database connection pending
+    // Non-fatal
   }
 
-  // Determine coverage
   coverage.languages = languageFailures === 0 ? "COMPLETE" : languageFailures < repos.length ? "PARTIAL" : "FAILED";
   coverage.commits = commitFailures === 0 ? "COMPLETE" : commitFailures < repos.length ? "PARTIAL" : "FAILED";
   coverage.pullRequests = prFailures === 0 ? "COMPLETE" : prFailures < repos.length ? "PARTIAL" : "FAILED";
 
   const isPartial = commitFailures > 0 || prFailures > 0 || languageFailures > 0;
+
+  console.log(`[GitHub Sync] Successfully synchronized ${repos.length} repos, ${totalCommits} commits, ${totalPRs} PRs.`);
 
   return {
     repositoriesCount: repos.length,

@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/dashboard/summary
  * Ultra-fast single-roundtrip aggregation endpoint for dashboard metrics and top items.
- * Avoids loading full commit DAGs or deep object trees on initial dashboard render.
+ * Validates real GitHub account connection status from database.
  */
 export async function GET() {
   try {
@@ -35,6 +35,7 @@ export async function GET() {
       topSkills,
       allSkillsCount,
       uniqueTechs,
+      ghAccount,
     ] = await Promise.all([
       // 1. Total repository count
       prisma.repository.count({
@@ -101,6 +102,16 @@ export async function GET() {
         select: { name: true },
         distinct: ["name"],
       }),
+
+      // 7. Real GitHub account connection verification
+      prisma.gitHubAccount.findUnique({
+        where: { userId: profile.id },
+        select: {
+          username: true,
+          connectionStatus: true,
+          accessToken: true,
+        },
+      }),
     ]);
 
     // Aggregate metrics
@@ -117,10 +128,18 @@ export async function GET() {
     const evidenceSignalsCount =
       totalContributions > 0 ? totalContributions + allSkillsCount * 5 : 0;
 
+    const isConnected = Boolean(
+      profile.githubConnected &&
+      ghAccount &&
+      ghAccount.connectionStatus === "connected" &&
+      ghAccount.accessToken
+    );
+
     return NextResponse.json({
       developerName: profile.displayName || profile.username || "Developer",
-      githubConnected: profile.githubConnected,
-      githubUsername: profile.githubUsername || profile.username,
+      githubConnected: isConnected,
+      githubUsername: ghAccount?.username || profile.githubUsername || profile.username,
+      connectionStatus: ghAccount?.connectionStatus || (isConnected ? "connected" : "disconnected"),
       repositoriesCount: allReposCount,
       totalCommits,
       totalPRs,

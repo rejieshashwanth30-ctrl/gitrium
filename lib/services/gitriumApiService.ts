@@ -595,7 +595,7 @@ class ProductionGitriumApiService implements IGitriumService {
     return this.getRepositories(query, language);
   }
 
-  async triggerGitHubSync(): Promise<{ success: boolean; message: string }> {
+  async triggerGitHubSync(): Promise<{ success: boolean; message: string; status?: string }> {
     try {
       this.clearCache();
       const res = await fetch("/api/github/sync", {
@@ -605,12 +605,13 @@ class ProductionGitriumApiService implements IGitriumService {
       const data = await res.json();
       this.clearCache();
       return {
-        success: res.ok && data.success,
-        message: data.message || (res.ok ? "GitHub sync complete" : "GitHub sync failed"),
+        success: Boolean(res.ok && data.success),
+        message: data.message || data.error || (res.ok ? "GitHub sync complete" : "GitHub sync failed"),
+        status: data.status || (res.ok ? "SYNCED" : "FAILED"),
       };
     } catch (e: any) {
       this.clearCache();
-      return { success: false, message: e?.message || "GitHub sync failed" };
+      return { success: false, message: e?.message || "GitHub sync failed", status: "FAILED" };
     }
   }
 

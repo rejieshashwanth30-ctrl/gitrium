@@ -23,16 +23,19 @@ export async function POST() {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    // In a real OAuth flow with Supabase, the provider_token is available in the session
+    // Attempt to extract provider_token from session if available
     const { data: sessionData } = await supabase.auth.getSession();
     const providerToken = sessionData.session?.provider_token;
 
-    // Trigger GitHub synchronization
+    // Trigger GitHub synchronization with concurrency lock
+    console.log(`[GitHub Sync API] Starting sync for profile ${profile.id} (${profile.email})...`);
     const syncResult = await syncUserGitHubData(profile.id, providerToken || undefined);
 
     if (syncResult.status === "RATE_LIMITED") {
       return NextResponse.json(
         {
+          success: false,
+          status: "RATE_LIMITED",
           error: "GitHub API rate limit reached. Please try again later.",
           syncResult,
         },
@@ -40,28 +43,44 @@ export async function POST() {
       );
     }
 
-    // Recompute skills based on newly ingested code evidence
+    if (syncResult.status === "FAILED") {
+      const errorMessage = syncResult.errors?.[0] || "Failed to synchronize GitHub repositories.";
+      const isTokenExpired = errorMessage.toLowerCase().includes("token") || errorMessage.toLowerCase().includes("reconnect");
+      return NextResponse.json(
+        {
+          success: false,
+          status: isTokenExpired ? "TOKEN_EXPIRED" : "FAILED",
+          error: errorMessage,
+          syncResult,
+        },
+        { status: isTokenExpired ? 401 : 400 }
+      );
+    }
+
+    // Recompute skills based on newly ingested real code evidence
     let updatedSkillsCount = 0;
     try {
       const updatedSkills = await computeUserSkills(profile.id);
       updatedSkillsCount = updatedSkills.length;
-    } catch {
-      // Database pending or no repos ingested
+    } catch (skillsErr: any) {
+      console.warn("[GitHub Sync API] Skill recomputation pending:", skillsErr?.message);
     }
 
     return NextResponse.json({
-      success: syncResult.status !== "FAILED",
-      syncResult,
+      success: true,
+      status: syncResult.status,
+      repositoriesCount: syncResult.repositoriesCount,
+      commitsCount: syncResult.commitsCount,
+      pullRequestsCount: syncResult.pullRequestsCount,
+      technologiesCount: syncResult.technologiesCount,
       updatedSkillsCount,
-      message:
-        syncResult.status === "FAILED"
-          ? "Sync failed to reach GitHub. Please check network or access token."
-          : `Synchronized ${syncResult.repositoriesCount} repositories and ${syncResult.commitsCount} commits.`,
+      message: `Synchronized ${syncResult.repositoriesCount} repositories, ${syncResult.commitsCount} commits, and ${syncResult.pullRequestsCount} pull requests.`,
+      syncResult,
     });
-  } catch (error) {
-    console.error("GitHub sync API error:", error);
+  } catch (error: any) {
+    console.error("[GitHub Sync API] Internal sync error:", error?.message || error);
     return NextResponse.json(
-      { error: "Failed to synchronize GitHub data" },
+      { success: false, status: "FAILED", error: "Internal error during GitHub synchronization." },
       { status: 500 }
     );
   }

@@ -54,8 +54,12 @@ function GitHubConnectContent() {
             <div className="p-3.5 rounded-[7px] bg-[#FAF0ED] border border-[#F3E3D8] text-[#D97745] text-xs flex items-center gap-2 font-mono">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>
-                {errorParam === "neon_auth_unreachable"
-                  ? "Authentication endpoint temporarily unreachable. Please retry."
+                {errorParam === "invalid_token"
+                  ? "GitHub authorization did not yield a valid access token. Please re-authorize GitHub."
+                  : errorParam === "no_provider_token"
+                  ? "No GitHub access token returned by OAuth session. Please try connecting again."
+                  : errorParam === "exchange_failed"
+                  ? "OAuth session exchange failed. Please re-authorize GitHub."
                   : "GitHub authorization could not be completed. Please try again."}
               </span>
             </div>

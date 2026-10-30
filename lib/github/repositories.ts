@@ -21,7 +21,7 @@ export interface NormalizedRepository {
 
 export async function fetchUserRepositories(
   octokit: Octokit,
-  maxPages = 3
+  maxPages = 5
 ): Promise<NormalizedRepository[]> {
   const repositories: NormalizedRepository[] = [];
   let page = 1;
@@ -37,7 +37,7 @@ export async function fetchUserRepositories(
         page,
       });
 
-      if (!response.data || response.data.length === 0) {
+      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
         break;
       }
 
@@ -46,10 +46,10 @@ export async function fetchUserRepositories(
           githubRepoId: repo.id.toString(),
           name: repo.name,
           fullName: repo.full_name,
-          description: repo.description,
+          description: repo.description || null,
           isPrivate: repo.private,
           isFork: repo.fork,
-          primaryLanguage: repo.language,
+          primaryLanguage: repo.language || null,
           stars: repo.stargazers_count || 0,
           forks: repo.forks_count || 0,
           watchers: repo.watchers_count || 0,
@@ -67,12 +67,15 @@ export async function fetchUserRepositories(
       }
 
       page++;
-    } catch (error: unknown) {
-      console.error(`Error fetching page ${page} of repositories:`, error);
+    } catch (error: any) {
+      console.error(`Error fetching page ${page} of repositories:`, error?.message || error);
+      // If the very first page failed, throw so the caller knows authentication or API failed
+      if (page === 1) {
+        throw error;
+      }
       break;
     }
   }
 
   return repositories;
 }
-

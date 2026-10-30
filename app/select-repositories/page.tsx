@@ -24,6 +24,8 @@ export default function SelectRepositoriesPage() {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+  const [isTokenExpired, setIsTokenExpired] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("All");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -40,9 +42,15 @@ export default function SelectRepositoriesPage() {
         // Automatically attempt an initial sync if no repositories are indexed yet
         setIsSyncing(true);
         try {
-          await gitriumApi.triggerGitHubSync();
+          const syncRes = await gitriumApi.triggerGitHubSync();
+          if (!syncRes.success) {
+            setSyncFeedback(syncRes.message);
+            if (syncRes.status === "TOKEN_EXPIRED") {
+              setIsTokenExpired(true);
+            }
+          }
           const syncedRepos = await gitriumApi.getRepositories();
-          if (Array.isArray(syncedRepos)) {
+          if (Array.isArray(syncedRepos) && syncedRepos.length > 0) {
             setRepositories(syncedRepos);
             setSelectedIds(syncedRepos.map((r) => r.id));
           }
@@ -65,15 +73,22 @@ export default function SelectRepositoriesPage() {
 
   const handleManualSync = async () => {
     setIsSyncing(true);
+    setSyncFeedback(null);
     try {
-      await gitriumApi.triggerGitHubSync();
+      const syncRes = await gitriumApi.triggerGitHubSync();
+      if (!syncRes.success) {
+        setSyncFeedback(syncRes.message);
+        if (syncRes.status === "TOKEN_EXPIRED") {
+          setIsTokenExpired(true);
+        }
+      }
       const repos = await gitriumApi.getRepositories();
       if (Array.isArray(repos)) {
         setRepositories(repos);
         setSelectedIds(repos.map((r) => r.id));
       }
-    } catch (err) {
-      console.error("Manual sync error:", err);
+    } catch (err: any) {
+      setSyncFeedback(err?.message || "Sync failed. Please check network connection.");
     } finally {
       setIsSyncing(false);
     }
@@ -225,23 +240,48 @@ export default function SelectRepositoriesPage() {
           </div>
         )}
 
+        {/* Feedback Banner */}
+        {syncFeedback && (
+          <div className="p-3.5 rounded-[8px] bg-[#FAF0ED] border border-[#F3E3D8] text-xs font-mono text-[#D97745] flex items-center justify-between">
+            <span>{syncFeedback}</span>
+            <button
+              onClick={() => setSyncFeedback(null)}
+              className="text-[#7A857E] hover:text-[#17201B] ml-2 text-xs"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Empty State */}
         {!isLoading && filteredRepos.length === 0 && (
           <div className="p-12 text-center rounded-[11px] border border-[#DDE1DC] bg-white font-mono text-xs text-[#7A857E] space-y-3">
             <FolderGit2 className="w-8 h-8 mx-auto text-[#7A857E]" />
-            <p className="font-bold text-[#17201B]">No repositories found.</p>
-            <p className="text-[11px] max-w-sm mx-auto">
-              Ensure your GitHub account is authorized and contains public or accessible repositories.
+            <p className="font-bold text-[#17201B]">
+              {isTokenExpired ? "GitHub Authorization Expired" : "No repositories found."}
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleManualSync}
-              isLoading={isSyncing}
-              className="mt-2 text-xs"
-            >
-              Sync Now
-            </Button>
+            <p className="text-[11px] max-w-sm mx-auto">
+              {isTokenExpired
+                ? "Your GitHub access token is no longer active. Reconnect your GitHub account to authorize repository ingestion."
+                : "Ensure your GitHub account is authorized and contains public or accessible repositories."}
+            </p>
+            {isTokenExpired ? (
+              <Link href="/github-connect">
+                <Button variant="emerald" size="sm" className="mt-2 text-xs bg-[#087453] hover:bg-[#159A72] text-white">
+                  Reconnect GitHub
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManualSync}
+                isLoading={isSyncing}
+                className="mt-2 text-xs"
+              >
+                Sync Now
+              </Button>
+            )}
           </div>
         )}
 
@@ -251,17 +291,7 @@ export default function SelectRepositoriesPage() {
             {filteredRepos.map((repo) => {
               const isSelected = selectedIds.includes(repo.id);
 
-              const handleAnalyzeSelected = async () => {
-    if (selectedIds.length === 0) return;
-    try {
-      await gitriumApi.selectRepositories(selectedIds);
-    } catch (e) {
-      console.warn("Selection persistence error:", e);
-    }
-    setIsScannerOpen(true);
-  };
-
-  return (
+              return (
                 <div
                   key={repo.id}
                   onClick={() => toggleSelectOne(repo.id)}

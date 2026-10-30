@@ -26,6 +26,7 @@ export default function RepositoriesPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("All");
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -48,9 +49,13 @@ export default function RepositoriesPage() {
 
   const handleSync = async () => {
     setIsSyncing(true);
+    setSyncFeedback(null);
     try {
-      await gitriumApi.triggerGitHubSync();
+      const res = await gitriumApi.triggerGitHubSync();
+      setSyncFeedback(res.message);
       await loadData();
+    } catch (err: any) {
+      setSyncFeedback(err?.message || "Sync encountered an error.");
     } finally {
       setIsSyncing(false);
     }
@@ -104,6 +109,19 @@ export default function RepositoriesPage() {
             </Button>
           </div>
         </div>
+
+        {/* Sync feedback notification */}
+        {syncFeedback && (
+          <div className="p-3.5 rounded-[8px] bg-[#18352B] border border-[#159A72]/40 text-xs font-mono text-[#F7F6F1] flex items-center justify-between">
+            <span>{syncFeedback}</span>
+            <button
+              onClick={() => setSyncFeedback(null)}
+              className="text-[#A8B3AC] hover:text-white ml-2 text-xs"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* Filter and Search Bar */}
         <div className="p-4 rounded-[11px] border border-[#27382F] bg-[#18201C] shadow-subtle flex flex-col sm:flex-row items-center justify-between gap-4">

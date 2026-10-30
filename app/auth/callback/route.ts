@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { ensureUserProfile } from "@/lib/auth/profileService";
+import { ensureUserProfile, invalidateUserProfileCache } from "@/lib/auth/profileService";
 import { prisma } from "@/lib/db/prisma";
 import { encryptToken } from "@/lib/security/encryption";
-import { syncNeonGitHubAccount } from "@/lib/auth/neonAuthClient";
+import { verifyGitHubAccessToken } from "@/lib/github/verifyToken";
+import { syncUserGitHubData } from "@/lib/ingestion/githubIngestion";
 
 export const dynamic = "force-dynamic";
 
@@ -12,115 +13,134 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
-  
+
   // Safe redirect path validation (protect against open redirects)
   const rawNext = searchParams.get("next") ?? "/select-repositories";
   const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/select-repositories";
 
   // 1. Handle cancelled authorization or OAuth error from provider
   if (error) {
-    console.warn("OAuth authorization failed or cancelled:", error, errorDescription);
+    console.warn("[OAuth Callback] Authorization error from provider:", error, errorDescription);
     return NextResponse.redirect(
       `${origin}/github-connect?error=${encodeURIComponent(errorDescription || error)}`
     );
   }
 
-  // 2. Handle Supabase exchange if code is present
+  // 2. Exchange authorization code for Supabase session
   if (code) {
     try {
       const supabase = createClient();
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-      if (!exchangeError && data.user) {
-        const profile = await ensureUserProfile(data.user);
-
-        // If GitHub OAuth provider token is returned in the session, link GitHub account securely
-        const providerToken = data.session?.provider_token;
-        const ghUsername =
-          data.user.user_metadata?.user_name ||
-          data.user.user_metadata?.preferred_username ||
-          null;
-        const ghId = data.user.user_metadata?.provider_id || data.user.id;
-
-        if (profile && (providerToken || ghUsername)) {
-          try {
-            const encryptedToken = providerToken ? encryptToken(providerToken) : null;
-
-            await prisma.userProfile.update({
-              where: { id: profile.id },
-              data: {
-                githubConnected: true,
-                githubUsername: ghUsername || profile.githubUsername,
-                avatarUrl: data.user.user_metadata?.avatar_url || profile.avatarUrl,
-              },
-            });
-
-            if (ghUsername) {
-              await prisma.gitHubAccount.upsert({
-                where: { userId: profile.id },
-                update: {
-                  githubId: String(ghId),
-                  username: ghUsername,
-                  profileUrl: `https://github.com/${ghUsername}`,
-                  avatarUrl: data.user.user_metadata?.avatar_url || null,
-                  accessToken: encryptedToken,
-                  connectionStatus: "connected",
-                  updatedAt: new Date(),
-                },
-                create: {
-                  userId: profile.id,
-                  githubId: String(ghId),
-                  username: ghUsername,
-                  profileUrl: `https://github.com/${ghUsername}`,
-                  avatarUrl: data.user.user_metadata?.avatar_url || null,
-                  accessToken: encryptedToken,
-                  connectionStatus: "connected",
-                },
-              });
-            }
-          } catch (dbErr) {
-            console.warn("GitHubAccount link error:", dbErr);
-          }
-        }
-
-        // Also check if Neon Auth has GitHub tokens for this user
-        if (profile) {
-          await syncNeonGitHubAccount(profile.id, profile.email);
-        }
-
-        return NextResponse.redirect(`${origin}${next}`);
+      if (exchangeError || !data.user) {
+        console.error("[OAuth Callback] Exchange code for session failed:", exchangeError?.message);
+        return NextResponse.redirect(
+          `${origin}/github-connect?error=exchange_failed`
+        );
       }
-    } catch (err) {
-      console.warn("Supabase code exchange skipped or failed:", err);
+
+      const profile = await ensureUserProfile(data.user);
+      if (!profile) {
+        return NextResponse.redirect(`${origin}/github-connect?error=profile_not_found`);
+      }
+
+      const providerToken = data.session?.provider_token;
+
+      // 3. Verify the token directly with GitHub API before persisting
+      if (providerToken) {
+        console.log("[OAuth Callback] Verifying GitHub provider_token with GitHub API...");
+        const verification = await verifyGitHubAccessToken(providerToken);
+
+        if (verification.valid && verification.user) {
+          console.log(`[OAuth Callback] GitHub token verified for @${verification.user.login} (ID: ${verification.user.id})`);
+          const encryptedToken = encryptToken(providerToken);
+
+          // Persist verified GitHub Account
+          await prisma.gitHubAccount.upsert({
+            where: { userId: profile.id },
+            update: {
+              githubId: verification.user.id,
+              username: verification.user.login,
+              profileUrl: `https://github.com/${verification.user.login}`,
+              avatarUrl: verification.user.avatarUrl || null,
+              accessToken: encryptedToken,
+              connectionStatus: "connected",
+              updatedAt: new Date(),
+            },
+            create: {
+              userId: profile.id,
+              githubId: verification.user.id,
+              username: verification.user.login,
+              profileUrl: `https://github.com/${verification.user.login}`,
+              avatarUrl: verification.user.avatarUrl || null,
+              accessToken: encryptedToken,
+              connectionStatus: "connected",
+            },
+          });
+
+          // Mark user profile as connected
+          await prisma.userProfile.update({
+            where: { id: profile.id },
+            data: {
+              githubConnected: true,
+              githubUsername: verification.user.login,
+              avatarUrl: verification.user.avatarUrl || profile.avatarUrl,
+            },
+          });
+          invalidateUserProfileCache(profile.id);
+
+          // 4. Automatically trigger initial repository ingestion right after connection
+          try {
+            console.log(`[OAuth Callback] Triggering initial repository ingestion for @${verification.user.login}...`);
+            await syncUserGitHubData(profile.id, providerToken);
+          } catch (syncErr: any) {
+            console.warn("[OAuth Callback] Initial sync will be retried on select-repositories:", syncErr?.message);
+          }
+
+          return NextResponse.redirect(`${origin}${next}`);
+        } else {
+          console.error("[OAuth Callback] Token verification failed:", verification.error, verification.errorMessage);
+          return NextResponse.redirect(
+            `${origin}/github-connect?error=invalid_token`
+          );
+        }
+      } else {
+        // Provider token was not attached in this session exchange.
+        // Check if an existing valid token exists for this profile
+        const existingAccount = await prisma.gitHubAccount.findUnique({
+          where: { userId: profile.id },
+        });
+
+        if (existingAccount?.accessToken) {
+          return NextResponse.redirect(`${origin}${next}`);
+        }
+
+        console.warn("[OAuth Callback] No provider_token received from Supabase OAuth exchange.");
+        return NextResponse.redirect(`${origin}/github-connect?error=no_provider_token`);
+      }
+    } catch (err: any) {
+      console.error("[OAuth Callback] Unexpected error during callback processing:", err);
+      return NextResponse.redirect(`${origin}/github-connect?error=callback_error`);
     }
   }
 
-  // 3. Handle Neon Auth return (where Neon Auth completed OAuth on its callback and redirected here)
+  // 5. Fallback for returning sessions
   try {
     const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    let targetProfile = null;
-
     if (user) {
-      targetProfile = await ensureUserProfile(user);
-    } else {
-      // Find the most recently active profile
-      targetProfile = await prisma.userProfile.findFirst({
-        orderBy: { updatedAt: "desc" },
-      });
+      const profile = await ensureUserProfile(user);
+      if (profile) {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
     }
 
-    if (targetProfile) {
-      // Synchronize GitHub details from neon_auth.account into Gitrium
-      await syncNeonGitHubAccount(targetProfile.id, targetProfile.email);
-    }
-
-    return NextResponse.redirect(`${origin}${next}`);
+    return NextResponse.redirect(`${origin}/github-connect`);
   } catch (err) {
-    console.error("Callback completion error:", err);
-    return NextResponse.redirect(`${origin}${next}`);
+    console.error("[OAuth Callback] General callback fallback error:", err);
+    return NextResponse.redirect(`${origin}/github-connect`);
   }
 }
