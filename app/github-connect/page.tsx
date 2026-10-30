@@ -15,10 +15,58 @@ import {
 } from "lucide-react";
 import { initiateGitHubConnect } from "@/lib/auth/githubAuthClient";
 
+function getSafeErrorMessage(error: string | null, description: string | null): string {
+  if (!error && !description) return "";
+
+  const errCode = (error || "").trim();
+  const desc = description ? decodeURIComponent(description).trim() : "";
+
+  // 1. Explicit categorized error codes
+  switch (errCode) {
+    case "GITHUB_TOKEN_INVALID":
+    case "invalid_token":
+      return "GitHub authorization did not yield a valid access token. Please re-authorize GitHub.";
+    case "GITHUB_TOKEN_MISSING":
+    case "no_provider_token":
+      return "No GitHub access token was returned by OAuth. Please ensure requested permissions (repo, read:user) are approved.";
+    case "GITHUB_TOKEN_EXPIRED":
+      return "Your GitHub authorization has expired or was revoked. Please reconnect your GitHub account.";
+    case "OAUTH_CODE_EXCHANGE_FAILED":
+    case "exchange_failed":
+      return desc && desc !== errCode
+        ? `OAuth session exchange failed: ${desc}. Please try connecting again.`
+        : "OAuth session exchange failed. Please re-authorize your GitHub account.";
+    case "GITHUB_RATE_LIMITED":
+      return "GitHub API rate limit reached. Please wait a few minutes before reconnecting.";
+    case "SUPABASE_SESSION_MISSING":
+    case "profile_not_found":
+      return "Could not resolve your user session. Please log in again before connecting GitHub.";
+    case "OAUTH_PROVIDER_ERROR":
+    case "oauth_init_failed":
+      return desc && desc !== errCode
+        ? `Authentication provider error: ${desc}`
+        : "GitHub OAuth could not be initialized with authentication provider. Please try again.";
+    case "OAUTH_CALLBACK_ERROR":
+    case "callback_error":
+      return desc && desc !== errCode
+        ? `OAuth callback notice: ${desc}`
+        : "An unexpected error occurred during GitHub authorization callback. Please try again.";
+    case "access_denied":
+      return "GitHub authorization was canceled or denied. Please approve the GitHub permissions to proceed.";
+    default:
+      if (desc && desc.length > 0) {
+        return `Authorization notice: ${desc}`;
+      }
+      return "GitHub authorization could not be completed. Please try again.";
+  }
+}
+
 function GitHubConnectContent() {
   const [isConnecting, setIsConnecting] = useState(false);
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
+  const errorDescParam = searchParams.get("error_description");
+  const errorMessage = getSafeErrorMessage(errorParam, errorDescParam);
 
   const handleConnect = async () => {
     if (isConnecting) return;
@@ -50,18 +98,10 @@ function GitHubConnectContent() {
             <span className="text-[#7A857E]">NEXT: REPOSITORY SELECTION</span>
           </div>
 
-          {errorParam && (
+          {errorMessage && (
             <div className="p-3.5 rounded-[7px] bg-[#FAF0ED] border border-[#F3E3D8] text-[#D97745] text-xs flex items-center gap-2 font-mono">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>
-                {errorParam === "invalid_token"
-                  ? "GitHub authorization did not yield a valid access token. Please re-authorize GitHub."
-                  : errorParam === "no_provider_token"
-                  ? "No GitHub access token returned by OAuth session. Please try connecting again."
-                  : errorParam === "exchange_failed"
-                  ? "OAuth session exchange failed. Please re-authorize GitHub."
-                  : "GitHub authorization could not be completed. Please try again."}
-              </span>
+              <span>{errorMessage}</span>
             </div>
           )}
 

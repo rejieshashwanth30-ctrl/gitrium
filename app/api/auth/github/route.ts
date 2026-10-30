@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 export const dynamic = "force-dynamic";
 
 /**
- * Initiates GitHub OAuth through Supabase Auth.
+ * Initiates GitHub OAuth through Supabase Auth (server-side entry point).
  * Connects Gitrium to GitHub via the configured OAuth provider.
  */
 export async function GET(request: Request) {
@@ -33,6 +33,9 @@ export async function GET(request: Request) {
       options: {
         redirectTo,
         scopes: "read:user user:email repo",
+        queryParams: {
+          prompt: "consent",
+        },
       },
     });
 
@@ -40,9 +43,17 @@ export async function GET(request: Request) {
       return NextResponse.redirect(data.url);
     }
     console.error("[OAuth Init] Supabase returned error:", error?.message);
+    return NextResponse.redirect(
+      `${origin}/github-connect?error=OAUTH_PROVIDER_ERROR&error_description=${encodeURIComponent(
+        error?.message || "OAuth provider initialization failed"
+      )}`
+    );
   } catch (err: any) {
     console.warn("[OAuth Init] Supabase server OAuth redirect error:", err?.message);
+    return NextResponse.redirect(
+      `${origin}/github-connect?error=OAUTH_PROVIDER_ERROR&error_description=${encodeURIComponent(
+        err?.message || "Server OAuth redirect failed"
+      )}`
+    );
   }
-
-  return NextResponse.redirect(`${origin}/github-connect?error=oauth_init_failed`);
 }

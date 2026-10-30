@@ -8,6 +8,12 @@ import { syncUserGitHubData } from "@/lib/ingestion/githubIngestion";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * GET /auth/callback
+ * Handles OAuth callback from Supabase / GitHub.
+ * Verifies the GitHub access token against GitHub API, persists encrypted account,
+ * triggers initial ingestion, and redirects safely.
+ */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -20,40 +26,56 @@ export async function GET(request: Request) {
 
   // 1. Handle cancelled authorization or OAuth error from provider
   if (error) {
-    console.warn("[OAuth Callback] Authorization error from provider:", error, errorDescription);
+    console.warn(`[GITHUB_OAUTH] Provider error: ${error} - ${errorDescription}`);
+    const errorCode = error === "access_denied" ? "access_denied" : "OAUTH_PROVIDER_ERROR";
+    const descParam = encodeURIComponent(errorDescription || error);
     return NextResponse.redirect(
-      `${origin}/github-connect?error=${encodeURIComponent(errorDescription || error)}`
+      `${origin}/github-connect?error=${errorCode}&error_description=${descParam}`
     );
   }
 
   // 2. Exchange authorization code for Supabase session
   if (code) {
     try {
+      console.log("[GITHUB_OAUTH] Exchanging authorization code for session...");
       const supabase = createClient();
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
       if (exchangeError || !data.user) {
-        console.error("[OAuth Callback] Exchange code for session failed:", exchangeError?.message);
+        console.error("[GITHUB_OAUTH] Code exchange failed:", exchangeError?.message);
+        const desc = encodeURIComponent(exchangeError?.message || "OAuth code exchange failed");
         return NextResponse.redirect(
-          `${origin}/github-connect?error=exchange_failed`
+          `${origin}/github-connect?error=OAUTH_CODE_EXCHANGE_FAILED&error_description=${desc}`
         );
       }
 
+      console.log(`[GITHUB_OAUTH] Session established for Supabase user ${data.user.id}`);
       const profile = await ensureUserProfile(data.user);
       if (!profile) {
-        return NextResponse.redirect(`${origin}/github-connect?error=profile_not_found`);
+        console.error("[GITHUB_OAUTH] Could not resolve UserProfile for user:", data.user.id);
+        return NextResponse.redirect(
+          `${origin}/github-connect?error=SUPABASE_SESSION_MISSING&error_description=Could+not+resolve+authenticated+user+profile`
+        );
       }
 
       const providerToken = data.session?.provider_token;
 
       // 3. Verify the token directly with GitHub API before persisting
       if (providerToken) {
-        console.log("[OAuth Callback] Verifying GitHub provider_token with GitHub API...");
+        console.log("[GITHUB_OAUTH] Verifying provider_token with GitHub API GET /user...");
         const verification = await verifyGitHubAccessToken(providerToken);
 
         if (verification.valid && verification.user) {
-          console.log(`[OAuth Callback] GitHub token verified for @${verification.user.login} (ID: ${verification.user.id})`);
+          console.log(`[GITHUB_OAUTH] Verified GitHub identity @${verification.user.login} (ID: ${verification.user.id})`);
           const encryptedToken = encryptToken(providerToken);
+
+          // Prevent unique constraint collision if this GitHub identity was previously linked to another user profile
+          await prisma.gitHubAccount.deleteMany({
+            where: {
+              githubId: verification.user.id,
+              userId: { not: profile.id },
+            },
+          });
 
           // Persist verified GitHub Account
           await prisma.gitHubAccount.upsert({
@@ -85,46 +107,58 @@ export async function GET(request: Request) {
               githubConnected: true,
               githubUsername: verification.user.login,
               avatarUrl: verification.user.avatarUrl || profile.avatarUrl,
+              updatedAt: new Date(),
             },
           });
           invalidateUserProfileCache(profile.id);
 
-          // 4. Automatically trigger initial repository ingestion right after connection
-          try {
-            console.log(`[OAuth Callback] Triggering initial repository ingestion for @${verification.user.login}...`);
-            await syncUserGitHubData(profile.id, providerToken);
-          } catch (syncErr: any) {
-            console.warn("[OAuth Callback] Initial sync will be retried on select-repositories:", syncErr?.message);
-          }
+          // 4. Automatically trigger repository ingestion asynchronously (non-blocking)
+          syncUserGitHubData(profile.id, providerToken).catch((syncErr: any) => {
+            console.warn("[GITHUB_SYNC] Background ingestion notification:", syncErr?.message);
+          });
 
+          console.log(`[GITHUB_OAUTH] Successfully connected @${verification.user.login}. Redirecting to ${next}`);
           return NextResponse.redirect(`${origin}${next}`);
         } else {
-          console.error("[OAuth Callback] Token verification failed:", verification.error, verification.errorMessage);
+          console.error(`[GITHUB_OAUTH] Token verification failed: ${verification.error} - ${verification.errorMessage}`);
+          const errCategory =
+            verification.error === "RATE_LIMITED"
+              ? "GITHUB_RATE_LIMITED"
+              : verification.error === "EXPIRED"
+              ? "GITHUB_TOKEN_EXPIRED"
+              : "GITHUB_TOKEN_INVALID";
+          const desc = encodeURIComponent(verification.errorMessage || "Token validation failed");
           return NextResponse.redirect(
-            `${origin}/github-connect?error=invalid_token`
+            `${origin}/github-connect?error=${errCategory}&error_description=${desc}`
           );
         }
       } else {
         // Provider token was not attached in this session exchange.
-        // Check if an existing valid token exists for this profile
+        // Check if an existing connected valid account exists for this profile
         const existingAccount = await prisma.gitHubAccount.findUnique({
           where: { userId: profile.id },
         });
 
-        if (existingAccount?.accessToken) {
+        if (existingAccount?.accessToken && existingAccount.connectionStatus === "connected") {
+          console.log("[GITHUB_OAUTH] Existing active connected GitHub account confirmed. Redirecting.");
           return NextResponse.redirect(`${origin}${next}`);
         }
 
-        console.warn("[OAuth Callback] No provider_token received from Supabase OAuth exchange.");
-        return NextResponse.redirect(`${origin}/github-connect?error=no_provider_token`);
+        console.warn("[GITHUB_OAUTH] No provider_token received from Supabase OAuth exchange.");
+        return NextResponse.redirect(
+          `${origin}/github-connect?error=GITHUB_TOKEN_MISSING&error_description=No+GitHub+access+token+returned+by+OAuth+session.+Please+re-authorize+with+repo+and+user+permissions.`
+        );
       }
     } catch (err: any) {
-      console.error("[OAuth Callback] Unexpected error during callback processing:", err);
-      return NextResponse.redirect(`${origin}/github-connect?error=callback_error`);
+      console.error("[GITHUB_OAUTH] Unexpected error during callback processing:", err);
+      const desc = encodeURIComponent(err?.message || "Unexpected error during authorization callback");
+      return NextResponse.redirect(
+        `${origin}/github-connect?error=OAUTH_CALLBACK_ERROR&error_description=${desc}`
+      );
     }
   }
 
-  // 5. Fallback for returning sessions
+  // 5. Fallback for returning sessions without code
   try {
     const supabase = createClient();
     const {
@@ -134,13 +168,18 @@ export async function GET(request: Request) {
     if (user) {
       const profile = await ensureUserProfile(user);
       if (profile) {
-        return NextResponse.redirect(`${origin}${next}`);
+        const ghAcc = await prisma.gitHubAccount.findUnique({
+          where: { userId: profile.id },
+        });
+        if (ghAcc?.connectionStatus === "connected" && ghAcc.accessToken) {
+          return NextResponse.redirect(`${origin}${next}`);
+        }
       }
     }
 
     return NextResponse.redirect(`${origin}/github-connect`);
   } catch (err) {
-    console.error("[OAuth Callback] General callback fallback error:", err);
+    console.error("[GITHUB_OAUTH] General callback fallback error:", err);
     return NextResponse.redirect(`${origin}/github-connect`);
   }
 }
