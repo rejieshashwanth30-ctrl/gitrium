@@ -96,8 +96,8 @@ export function computeEvidenceSnapshotHash(snapshot: EvidenceSnapshot): string 
 }
 
 /**
- * Fallback deterministic evidence synthesis engine.
- * Generates structured, truthful developer intelligence strictly derived from verified facts
+ * Human-friendly evidence synthesis engine.
+ * Generates clear, understandable insights strictly derived from verified GitHub activity
  * when external LLM endpoints are unavailable or unconfigured.
  */
 export function synthesizeEvidenceDeterministically(
@@ -124,13 +124,13 @@ export function synthesizeEvidenceDeterministically(
   if (repoCount === 0 || totalCommits === 0) {
     return {
       summary:
-        "Insufficient development evidence observed. Connect and synchronize active GitHub repositories to initiate automated AST analysis and generate evidence-backed insights.",
+        "Gitrium did not find enough project activity yet. Connect your GitHub account to review your projects, skills, and growth.",
       strengths: [],
       emergingSkills: [],
       developmentAreas: [
         {
-          title: "Repository Synchronization Required",
-          explanation: "Link active GitHub codebases containing commit history to generate evidence signals.",
+          title: "Connect Your GitHub Account",
+          explanation: "Link your active repositories containing your work to generate insights and skill evidence.",
         },
       ],
       engineeringPatterns: [],
@@ -138,7 +138,7 @@ export function synthesizeEvidenceDeterministically(
       recommendedNextSteps: [
         {
           title: "Connect GitHub Account",
-          reason: "Synchronize your personal or organization repositories to index commits, AST manifests, and contributions.",
+          reason: "Connect and synchronize your repositories so Gitrium can study your commits and project technologies.",
         },
       ],
       evidenceTraceabilityKey: hash,
@@ -155,103 +155,123 @@ export function synthesizeEvidenceDeterministically(
     };
   }
 
-  // 2. Summary
-  const langText = primaryLangs.length > 0 ? primaryLangs.slice(0, 3).join(", ") : "detected ecosystems";
-  const summary = `Empirical AST and repository structure analysis indicates ${developerName} demonstrates sustained implementation evidence across ${repoCount} audited codebase${repoCount === 1 ? "" : "s"} (${langText}). With ${totalCommits} verified commits and an aggregate code integrity rating of ${integrityScore}%, the evidence reflects atomic delivery patterns and modular software architecture.`;
+  // 2. Clear, simple executive summary
+  const langText = primaryLangs.length > 0 ? primaryLangs.slice(0, 3).join(", ") : "modern web technologies";
+  const summary = `Your GitHub activity shows consistent work across ${repoCount} project${repoCount === 1 ? "" : "s"}. You have strong evidence of hands-on development with ${langText}. Gitrium found this from your project activity, ${totalCommits} commits, technologies, and repeated usage across your repositories.`;
 
-  // 3. Strengths
+  // 3. What You're Good At (Your Strengths)
   const strengths: StructuredAIInsights["strengths"] = [];
-  if (primaryLangs.length > 0) {
+
+  const hasTypeScript = primaryLangs.some((l) => l.toLowerCase().includes("typescript")) ||
+    uniqueTechnologies.some((t) => t.toLowerCase().includes("typescript"));
+  const hasFrontend = primaryLangs.some((l) => ["javascript", "html", "css", "react"].includes(l.toLowerCase())) ||
+    uniqueTechnologies.some((t) => ["react", "next.js", "tailwind", "vue", "html", "css"].includes(t.toLowerCase()));
+
+  if (hasTypeScript) {
     strengths.push({
-      title: `Demonstrated Core Ecosystem Usage in ${primaryLangs[0]}`,
-      explanation: `Consistent author events and syntax structures identified in ${repositories.filter((r) => r.language === primaryLangs[0]).length} audited codebases.`,
+      title: "Strong TypeScript Experience",
+      explanation: "You have used TypeScript repeatedly across several projects, giving Gitrium strong evidence of practical experience.",
+      evidenceIds: repositories.filter((r) => r.language?.toLowerCase().includes("typescript")).map((r) => r.id),
+    });
+  } else if (primaryLangs.length > 0) {
+    strengths.push({
+      title: `Strong ${primaryLangs[0]} Experience`,
+      explanation: `You have used ${primaryLangs[0]} across multiple projects with regular updates and commits.`,
       evidenceIds: repositories.filter((r) => r.language === primaryLangs[0]).map((r) => r.id),
     });
   }
-  if (topSkills.length > 0) {
+
+  if (hasFrontend) {
     strengths.push({
-      title: `Repeated Framework Evidence in ${topSkills.slice(0, 2).map((s) => s.name).join(" and ")}`,
-      explanation: `Syntax patterns and dependency manifests confirm repeated implementation across ${topSkills[0].projectCount} distinct project trees.`,
+      title: "Strong Frontend Experience",
+      explanation: "HTML, CSS, and frontend tools appear repeatedly across your projects, showing consistent UI and client-side development.",
+    });
+  } else if (topSkills.length > 0) {
+    strengths.push({
+      title: `Hands-on Experience in ${topSkills[0].name}`,
+      explanation: `Used across ${topSkills[0].projectCount} project${topSkills[0].projectCount === 1 ? "" : "s"} with verified code contributions.`,
       evidenceIds: [topSkills[0].name],
     });
   }
+
   if (totalCommits > 15) {
     strengths.push({
-      title: "Consistent Author Cadence Across Branches",
-      explanation: `${totalCommits} verified commit DAG nodes demonstrate regular, atomic delivery cycles without artificial bulk merges.`,
+      title: "Consistent Development Activity",
+      explanation: "Your GitHub history shows regular development activity across your projects.",
     });
   }
 
-  // 4. Emerging Skills
+  // 4. Skills You're Building (Growing Skills)
   const emergingSkills: StructuredAIInsights["emergingSkills"] = skills
     .filter((s) => s.evidenceStrength === "Moderate Evidence" || s.evidenceStrength === "Limited Evidence")
     .slice(0, 3)
     .map((s) => ({
       skill: s.name,
-      explanation: `Observed across ${s.projectCount} project${s.projectCount === 1 ? "" : "s"} with ${s.evidenceCount} associated commit signals.`,
+      explanation: `You are using ${s.name} across ${s.projectCount} project${s.projectCount === 1 ? "" : "s"}, and it appears in your recent work.`,
       evidenceIds: [s.name],
     }));
 
-  if (emergingSkills.length === 0 && uniqueTechnologies.length > 2) {
+  if (emergingSkills.length === 0 && uniqueTechnologies.length > 1) {
+    const growingTech = uniqueTechnologies.find((t) => !hasTypeScript || t.toLowerCase() !== "typescript") || uniqueTechnologies[0];
     emergingSkills.push({
-      skill: uniqueTechnologies[1],
-      explanation: "Detected through package manifests and dependency configurations.",
+      skill: growingTech,
+      explanation: `You are using ${growingTech} across your projects, and it appears regularly in your recent work.`,
     });
   }
 
-  // 5. Development Areas
+  // 5. What You Could Improve
   const developmentAreas: StructuredAIInsights["developmentAreas"] = [];
   if (!testingDetected) {
     developmentAreas.push({
-      title: "Automated Testing Coverage",
-      explanation: "Limited automated test suite specifications (Jest, Vitest, PyTest) observed in repository root directories.",
+      title: "Add Automated Tests",
+      explanation: "Your projects show limited evidence of automated tests. Adding unit or integration tests would make your projects more reliable and strengthen your development profile.",
     });
   }
   developmentAreas.push({
-    title: "CI/CD & Observability Workflows",
-    explanation: "Increasing formal CI pipeline and deployment definitions will strengthen production readiness signals.",
+    title: "Keep Main Projects Active & Documented",
+    explanation: "Adding clear README guides and regular updates will make your projects easier for collaborators and hiring teams to understand.",
   });
 
   // 6. Engineering Patterns
   const engineeringPatterns: StructuredAIInsights["engineeringPatterns"] = [
     {
-      title: "Modular Full-Stack Application Delivery",
-      explanation: `Evidence indicates concentration in ${langText} with structured component separation and dependency boundaries.`,
+      title: "Full-Stack Application Development",
+      explanation: `Your projects combine frontend interfaces with backend services in ${langText}.`,
     },
     {
-      title: "Atomic Development Cadence",
-      explanation: `Commit delta distributions across ${repoCount} codebases show incremental feature development rather than monolithic commits.`,
+      title: "Active Contribution Rhythm",
+      explanation: `Regular commit history across ${repoCount} projects shows steady progress over time.`,
     },
   ];
 
-  // 7. Career Signals
+  // 7. Career Direction
   const careerSignals: StructuredAIInsights["careerSignals"] = [];
   if (primaryLangs.some((l) => ["typescript", "javascript", "react", "html", "css"].includes(l.toLowerCase()))) {
     careerSignals.push({
-      role: "Full-Stack Web Systems Engineer",
-      explanation: `Verified repository history shows repeated implementation of frontend interfaces and server-side components in ${langText}.`,
+      role: "Full-Stack Web Development",
+      explanation: "Your current project history shows repeated work across frontend and backend technologies, which aligns well with full-stack development.",
     });
   } else if (primaryLangs.some((l) => ["python", "go", "rust", "java"].includes(l.toLowerCase()))) {
     careerSignals.push({
-      role: "Backend & Systems Infrastructure Engineer",
-      explanation: `Observed code evidence emphasizes modular service architectures and structured data workflows.`,
+      role: "Backend & Systems Development",
+      explanation: "Your project history shows experience with backend services, structured logic, and data workflows.",
     });
   } else {
     careerSignals.push({
-      role: "Software Applications Engineer",
-      explanation: `Broad implementation evidence recorded across ${repoCount} audited codebases.`,
+      role: "Software Application Development",
+      explanation: `Your project work demonstrates practical experience building software across ${repoCount} repositories.`,
     });
   }
 
-  // 8. Next Steps
+  // 8. Recommended Next Steps
   const recommendedNextSteps: StructuredAIInsights["recommendedNextSteps"] = [
     {
-      title: "Formalize Test Suites Across Primary Projects",
-      reason: "Adding unit and integration test assertions increases evidence confidence for enterprise-grade roles.",
+      title: "Build one project with strong testing",
+      reason: "Add automated tests, document the project clearly, and keep the work visible in GitHub.",
     },
     {
-      title: "Maintain Commit Provenance on Main Branches",
-      reason: "Continuous, signed commit activity strengthens authorship verification across all evaluated codebases.",
+      title: "Keep Your Main Projects Active",
+      reason: "Continue maintaining your main projects and keeping your GitHub history up to date.",
     },
   ];
 
@@ -286,7 +306,6 @@ export async function generateAIInterpretation(
 ): Promise<StructuredAIInsights> {
   const hash = computeEvidenceSnapshotHash(snapshot);
 
-  // Check if Gemini or generic AI key is configured
   const apiKey =
     process.env.GEMINI_API_KEY ||
     process.env.AI_PROVIDER_API_KEY ||
@@ -298,23 +317,34 @@ export async function generateAIInterpretation(
 
   const isGemini = Boolean(process.env.GEMINI_API_KEY || process.env.AI_PROVIDER_API_KEY);
 
-  const systemInstruction = `You are Gitrium's evidence interpretation engine.
-You must ONLY interpret the structured deterministic evidence supplied to you.
-Never invent repositories, commits, pull requests, technologies, frameworks, skills, dates, percentages, achievements, authorship claims, or employment outcomes.
-Never claim mastery from limited evidence.
-Never claim human authorship with certainty.
-Never claim plagiarism/originality with certainty.
-Never fabricate statistical confidence (no p-values or percentage probabilities of getting a job).
-If evidence is insufficient, explicitly state "Insufficient evidence to determine."
-Use cautious analytical language: observed, indicates, suggests, supported by evidence, repeated evidence, limited evidence.
-Return strictly valid JSON conforming to the requested schema.`;
+  const systemInstruction = `You are Gitrium's developer intelligence engine.
+Your mission is to study the developer's real GitHub activity and explain what their work shows in simple, natural, encouraging language.
+Do NOT use internal technical jargon like "AST", "AST transformations", "commit DAG", "cryptographic provenance", "syntactic trees", "p-values", or statistical probability claims.
+Follow this simple structure:
+1. WHAT WE FOUND: Summarize their real work and technologies clearly.
+2. WHY WE THINK IT: Point to project activity, commits, and repeated technology usage.
+3. WHAT THEY CAN DO NEXT: Provide practical, actionable advice.
 
-  const userPrompt = `Interpret this verified engineering evidence snapshot:
+Sections to generate:
+- summary: A clear 2-3 sentence overview of their work and primary technologies.
+- strengths: What they are good at (e.g. "Strong TypeScript Experience", "Strong Frontend Experience", "Consistent Development Activity").
+- emergingSkills: Skills they are currently building or using in recent projects.
+- developmentAreas: Practical areas for improvement (e.g. "Add Automated Tests", "Keep Projects Documented").
+- careerSignals: Roles their work aligns with (e.g. "Full-Stack Web Development") and why.
+- recommendedNextSteps: 1-2 concrete next steps (e.g. "Build one project with strong testing").
+
+CRITICAL SAFETY RULES:
+- Never invent repositories, commits, pull requests, technologies, skills, or employment guarantees.
+- Never claim guaranteed mastery or guaranteed hiring outcomes.
+- Base every single observation strictly on the provided evidence snapshot.
+- Return strictly valid JSON conforming to the requested schema.`;
+
+  const userPrompt = `Review this verified GitHub work snapshot and generate clear, human-readable insights:
 ${JSON.stringify(snapshot, null, 2)}
 
 Return a JSON object with this exact shape:
 {
-  "summary": "Concise 2-3 sentence executive synthesis indicating what the evidence supports.",
+  "summary": "Clear 2-3 sentence human-readable summary of what their work shows.",
   "strengths": [{"title": "string", "explanation": "string"}],
   "emergingSkills": [{"skill": "string", "explanation": "string"}],
   "developmentAreas": [{"title": "string", "explanation": "string"}],

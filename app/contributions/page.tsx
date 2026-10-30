@@ -49,13 +49,13 @@ export default function ContributionsPage() {
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] bg-[#18352B] border border-[#27382F] text-[#159A72] text-xs font-mono font-semibold mb-2">
               <GitCommit className="w-3.5 h-3.5" />
-              <span>TEMPORAL ACTIVITY METRICS</span>
+              <span>GITHUB ACTIVITY</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold font-mono text-[#F7F6F1] tracking-tight uppercase">
-              Contribution Intelligence
+              Contribution History
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-mono">
-              Audit the rhythm, cadence, and distribution of your code across {repositoriesCount} connected repositories.
+            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-sans">
+              Your GitHub activity over time across {repositoriesCount} connected projects.
             </p>
           </div>
         </div>
@@ -68,11 +68,11 @@ export default function ContributionsPage() {
           <div className="p-5 rounded-[11px] border border-[#27382F] bg-[#18201C] text-left shadow-subtle flex flex-col justify-between">
             <div>
               <div className="text-2xl sm:text-3xl font-extrabold text-[#F7F6F1] tracking-tight">{totalCommits}</div>
-              <div className="text-xs font-medium text-[#A8B3AC] mt-1">Commits Recorded</div>
+              <div className="text-xs font-medium text-[#A8B3AC] mt-1">Commits</div>
             </div>
             <div className="mt-3 pt-2 border-t border-[#24352C]">
-              <span className="text-[10px] text-[#159A72] font-medium px-2 py-0.5 rounded-[4px] bg-[#18352B] border border-[#27382F]">
-                100% DAG Verified
+              <span className="text-[10px] text-[#159A72] font-medium font-sans">
+                Recorded in connected projects
               </span>
             </div>
           </div>
@@ -83,8 +83,8 @@ export default function ContributionsPage() {
               <div className="text-xs font-medium text-[#A8B3AC] mt-1">Pull Requests</div>
             </div>
             <div className="mt-3 pt-2 border-t border-[#24352C]">
-              <span className="text-[10px] text-[#159A72] font-medium px-2 py-0.5 rounded-[4px] bg-[#18352B] border border-[#27382F]">
-                Feature Branches
+              <span className="text-[10px] text-[#159A72] font-medium font-sans">
+                Feature branches &amp; updates
               </span>
             </div>
           </div>
@@ -95,18 +95,18 @@ export default function ContributionsPage() {
               <div className="text-xs font-medium text-[#A8B3AC] mt-1">Active Streak</div>
             </div>
             <div className="mt-3 pt-2 border-t border-[#24352C]">
-              <span className="text-[10px] text-[#7A857E] font-medium">Verified Continuity</span>
+              <span className="text-[10px] text-[#7A857E] font-medium font-sans">Recent activity rhythm</span>
             </div>
           </div>
 
           <div className="p-5 rounded-[11px] border border-[#27382F] bg-[#18201C] text-left shadow-subtle flex flex-col justify-between">
             <div>
               <div className="text-2xl sm:text-3xl font-extrabold text-[#159A72] tracking-tight">{repositoriesCount}</div>
-              <div className="text-xs font-medium text-[#A8B3AC] mt-1">Repositories Audited</div>
+              <div className="text-xs font-medium text-[#A8B3AC] mt-1">Projects Worked On</div>
             </div>
             <div className="mt-3 pt-2 border-t border-[#24352C]">
-              <span className="text-[10px] text-[#A8B3AC] font-medium px-2 py-0.5 rounded-[4px] bg-[#151A17] border border-[#24352C]">
-                Active Scope
+              <span className="text-[10px] text-[#A8B3AC] font-medium font-sans">
+                Connected repositories
               </span>
             </div>
           </div>

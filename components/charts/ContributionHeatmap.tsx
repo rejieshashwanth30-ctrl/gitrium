@@ -70,8 +70,8 @@ export function ContributionHeatmap() {
             <GitCommit className="w-4 h-4 text-[#159A72]" />
             <span>Contribution Activity Cadence</span>
           </h3>
-          <p className="text-xs text-[#A8B3AC] mt-0.5">
-            Verified Git commits, pull requests, and AST transformations over the past 365 days
+          <p className="text-xs text-[#A8B3AC] mt-0.5 font-sans">
+            Your commits, pull requests, and project activity over the past year.
           </p>
         </div>
 

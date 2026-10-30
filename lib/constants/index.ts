@@ -44,7 +44,7 @@ export const DASHBOARD_NAV = [
   { label: "Skills", href: "/skills", icon: "Cpu" },
   { label: "Evidence", href: "/evidence", icon: "FileCode" },
   { label: "Code Integrity", href: "/integrity", icon: "ShieldCheck" },
-  { label: "Analysis Engine", href: "/analysis", icon: "Scan" },
+  { label: "Project Analysis", href: "/analysis", icon: "Scan" },
   { label: "Career Match", href: "/career", icon: "Briefcase" },
   { label: "Reports", href: "/reports", icon: "FileText" },
   { label: "Profile", href: "/profile", icon: "UserCheck" },
@@ -52,14 +52,14 @@ export const DASHBOARD_NAV = [
 ];
 
 export const ANALYSIS_STAGES = [
-  { id: 1, title: "Connecting to repository", description: "Authenticating and fetching branch metadata & tree refs" },
-  { id: 2, title: "Reading repository structure", description: "Parsing directory hierarchy, configuration files, and manifests" },
-  { id: 3, title: "Reading commit history", description: "Traversing commit DAG, diff sizes, authorship timestamp deltas" },
-  { id: 4, title: "Mapping contributors", description: "Correlating author signatures, co-authors, and PR ownership" },
-  { id: 5, title: "Analyzing technologies", description: "Detecting frameworks, runtimes, package dependencies, and toolchains" },
-  { id: 6, title: "Analyzing project evolution", description: "Evaluating architectural refactors, modularity shifts, and cadence" },
-  { id: 7, title: "Extracting skill evidence", description: "Isolating concrete code patterns, test suites, API implementations" },
-  { id: 8, title: "Evaluating integrity signals", description: "Analyzing commit continuity, external source signals, history depth" },
-  { id: 9, title: "Building evidence graph", description: "Synthesizing relational nodes connecting repositories to skills" },
-  { id: 10, title: "Generating audit report", description: "Compiling verifiable findings, confidence bounds, and recommendations" },
+  { id: 1, title: "Connecting to your project", description: "Verifying repository access and branch references" },
+  { id: 2, title: "Reading project structure", description: "Checking folders, configuration files, and project layout" },
+  { id: 3, title: "Reviewing development history", description: "Analyzing commits, code changes, and activity over time" },
+  { id: 4, title: "Mapping contributions", description: "Reviewing your commits, author activity, and pull requests" },
+  { id: 5, title: "Finding technologies", description: "Detecting programming languages, frameworks, packages, and tools" },
+  { id: 6, title: "Understanding your work", description: "Reviewing code structure, project growth, and architecture patterns" },
+  { id: 7, title: "Building your skill evidence", description: "Identifying practical evidence for languages, frameworks, and tools" },
+  { id: 8, title: "Checking project consistency", description: "Reviewing development cadence and activity patterns" },
+  { id: 9, title: "Connecting skills and projects", description: "Linking verified project work to your developer profile" },
+  { id: 10, title: "Preparing your insights", description: "Generating clear summaries, strengths, and recommended next steps" },
 ];

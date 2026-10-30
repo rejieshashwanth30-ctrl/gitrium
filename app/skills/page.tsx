@@ -62,13 +62,13 @@ export default function SkillsPage() {
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] bg-[#18352B] border border-[#27382F] text-[#159A72] text-xs font-mono font-semibold mb-2">
               <Cpu className="w-3.5 h-3.5" />
-              <span>EMPIRICAL CODE PROVENANCE</span>
+              <span>SKILLS &amp; TECHNOLOGIES</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold font-mono text-[#F7F6F1] tracking-tight uppercase">
-              Skill Intelligence
+              Skills Supported by Your Work
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-mono">
-              Every score is mathematically derived from commit diffs, AST syntax trees, and test assertions.
+            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-sans">
+              How strongly your GitHub activity supports each skill, based on your real projects and contributions.
             </p>
           </div>
 
@@ -178,13 +178,13 @@ export default function SkillsPage() {
                   </div>
 
                   <div className="flex items-center justify-between text-xs font-mono text-[#7A857E] pt-2 border-t border-[#24352C]">
-                    <span>{skill.evidenceCount} Commit Nodes</span>
+                    <span>{skill.evidenceCount} Contributions</span>
                     <span>{skill.projectCount} Projects</span>
                   </div>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-[#24352C] flex items-center justify-between text-xs font-mono text-[#159A72] font-semibold">
-                  <span>Inspect Proof</span>
+                  <span>View Skill Evidence</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
@@ -198,21 +198,21 @@ export default function SkillsPage() {
         <Modal
           isOpen={!!selectedSkill}
           onClose={() => setSelectedSkill(null)}
-          title={`Evidence Audit: ${selectedSkill.name}`}
+          title={`Skill Evidence: ${selectedSkill.name}`}
         >
           <div className="space-y-4 font-mono text-xs">
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C] flex items-center justify-between">
-              <span className="text-[#A8B3AC]">Evidence Strength Score:</span>
+              <span className="text-[#A8B3AC]">Evidence Strength:</span>
               <span className="text-sm font-bold text-[#159A72]">{selectedSkill.proficiencyScore}%</span>
             </div>
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C] flex items-center justify-between">
-              <span className="text-[#A8B3AC]">Evidence Strength:</span>
+              <span className="text-[#A8B3AC]">Strength Rating:</span>
               <EvidenceStrengthBadge strength={selectedSkill.evidenceStrength} />
             </div>
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C] space-y-1">
-              <span className="text-[#A8B3AC] block">Audit Traceability:</span>
+              <span className="text-[#A8B3AC] block">Project Evidence:</span>
               <p className="text-[11px] text-[#F7F6F1] font-sans leading-relaxed">
-                Skill evidence computed across {selectedSkill.projectCount} audited repository projects and {selectedSkill.evidenceCount} commit DAG nodes.
+                Skill evidence computed across {selectedSkill.projectCount} project{selectedSkill.projectCount === 1 ? "" : "s"} and {selectedSkill.evidenceCount} recorded contributions.
               </p>
             </div>
 
@@ -220,12 +220,12 @@ export default function SkillsPage() {
             <div className="p-3.5 rounded-[6px] bg-[#151A17] border border-[#24352C] space-y-1.5">
               <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-[#159A72] uppercase tracking-wider">
                 <Sparkles className="w-3 h-3 text-[#159A72]" />
-                <span>AI Evidence Interpretation</span>
+                <span>AI Insights</span>
               </div>
               <p className="text-[11px] text-[#A8B3AC] font-sans leading-relaxed">
                 {selectedSkill.evidenceCount >= 10
-                  ? `Strong and repeated implementation evidence observed across ${selectedSkill.projectCount} repository codebase${selectedSkill.projectCount > 1 ? "s" : ""}. AST syntactical structures indicate sustained architecture usage with ${selectedSkill.proficiencyScore}% empirical score.`
-                  : `Emerging skill pattern observed across ${selectedSkill.projectCount} repository codebase${selectedSkill.projectCount > 1 ? "s" : ""}. Further production commits and test assertions will increase the empirical evidence score.`}
+                  ? `Strong and repeated evidence found across ${selectedSkill.projectCount} project${selectedSkill.projectCount > 1 ? "s" : ""}. Your GitHub activity shows consistent practical experience using ${selectedSkill.name}.`
+                  : `Emerging evidence found across ${selectedSkill.projectCount} project${selectedSkill.projectCount > 1 ? "s" : ""}. Further project updates and contributions will increase evidence for this skill.`}
               </p>
             </div>
           </div>

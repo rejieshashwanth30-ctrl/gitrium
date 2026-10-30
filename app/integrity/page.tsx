@@ -58,13 +58,13 @@ export default function IntegrityPage() {
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] bg-[#18352B] border border-[#27382F] text-[#159A72] text-xs font-mono font-semibold mb-2">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>EMPIRICAL INTEGRITY SIGNALS</span>
+              <span>ACTIVITY CONSISTENCY</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold font-mono text-[#F7F6F1] tracking-tight uppercase">
-              Code Integrity Signals
+              Code Integrity &amp; Consistency
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-mono">
-              Audits contribution continuity, repository history depth, pattern signals, and AI-assisted drafting signals without false certainty.
+            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-sans">
+              Gitrium looks for consistency in your project history, contribution patterns, and development activity.
             </p>
           </div>
         </div>
@@ -77,13 +77,12 @@ export default function IntegrityPage() {
           <Info className="w-5 h-5 text-[#159A72] mt-0.5 flex-shrink-0" />
           <div className="space-y-1">
             <h4 className="text-xs font-bold text-[#F7F6F1] uppercase font-mono tracking-wider">
-              Methodology Transparency &amp; Ethical Safeguards
+              How Gitrium Evaluates Consistency &amp; Ethical Safeguards
             </h4>
             <p className="text-xs text-[#A8B3AC] leading-relaxed font-sans">
-              Gitrium strictly avoids simplistic claims of &ldquo;100% human-written&rdquo; or &ldquo;unforgeable code&rdquo;.
-              Modern software development naturally integrates AI drafting tools, external open-source libraries, and
-              iterative scaffolding. Our signals are designed as analytical confidence indicators to give context to
-              engineering leaders, not to produce punitive or absolute verdicts.
+              Gitrium does not claim to prove that code is 100% human-written.
+              Modern development naturally includes AI tools, libraries, and boilerplates.
+              Our indicators simply provide helpful context about steady project activity and consistent contributions.
             </p>
           </div>
         </div>
@@ -94,26 +93,26 @@ export default function IntegrityPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#159A72] uppercase tracking-wider">
                 <Sparkles className="w-4 h-4 text-[#159A72]" />
-                <span>AI Interpretation: Author Cadence &amp; Provenance</span>
+                <span>AI Insights: Development Consistency</span>
               </div>
               <span className="text-[10px] font-mono text-[#7A857E]">
-                Anchor: {aiInsights.evidenceTraceabilityKey ? `${aiInsights.evidenceTraceabilityKey.slice(0, 12)}...` : "deterministic-hash"}
+                Based on {aiInsights.evidenceBasis.repositoriesCount} projects · {aiInsights.evidenceBasis.commitsCount} commits
               </span>
             </div>
-            <p className="text-xs text-[#F7F6F1] font-mono leading-relaxed">
-              Empirical cadence analysis indicates sustained commit continuity across {aiInsights.evidenceBasis.repositoriesCount} repositories and {aiInsights.evidenceBasis.commitsCount} recorded commits. Authorship fingerprints show consistent syntax delta patterns with no uncorroborated anomalous bulk injections.
+            <p className="text-xs text-[#F7F6F1] font-sans leading-relaxed">
+              Your GitHub activity reflects regular, incremental development work across your projects without artificial activity bursts. Contributions match your profile with steady code updates over time.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#24352C] text-xs font-mono">
               <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C] space-y-1">
-                <span className="text-[#159A72] font-bold block">Temporal Consistency:</span>
+                <span className="text-[#159A72] font-bold block">Development Rhythm:</span>
                 <span className="text-[#A8B3AC] text-[11px] font-sans">
-                  Commit distribution reflects regular development activity without synthetic commit-burst signatures.
+                  Commit distribution shows steady progress rather than sudden one-time file additions.
                 </span>
               </div>
               <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C] space-y-1">
-                <span className="text-[#159A72] font-bold block">Authorship Integrity:</span>
+                <span className="text-[#159A72] font-bold block">Account Consistency:</span>
                 <span className="text-[#A8B3AC] text-[11px] font-sans">
-                  Git author signatures match authenticated profile with cryptographic SHA integrity checks.
+                  Project updates and author details match your connected GitHub account.
                 </span>
               </div>
             </div>

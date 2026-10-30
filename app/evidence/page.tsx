@@ -79,7 +79,14 @@ export default function EvidenceExplorerPage() {
     loadEvidence();
   }, []);
 
-  const sourceTypes = ["All", "Repository", "Commit", "PullRequest", "Test", "Architecture"];
+  const sourceTypes = [
+    { label: "All", value: "All" },
+    { label: "Projects", value: "Repository" },
+    { label: "Commits", value: "Commit" },
+    { label: "Pull Requests", value: "PullRequest" },
+    { label: "Tests", value: "Test" },
+    { label: "Architecture", value: "Architecture" },
+  ];
 
   const filteredNodes = useMemo(() => {
     return evidenceNodes.filter((n) => {
@@ -115,19 +122,19 @@ export default function EvidenceExplorerPage() {
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] bg-[#18352B] border border-[#27382F] text-[#159A72] text-xs font-mono font-semibold mb-2">
               <FileCode className="w-3.5 h-3.5" />
-              <span>CRYPTOGRAPHIC CODE PROOFS</span>
+              <span>PROJECT EVIDENCE</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold font-mono text-[#F7F6F1] tracking-tight uppercase">
               Evidence Explorer
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-mono">
-              Query every individual commit, pull request, test suite, and architectural pattern in your vault.
+            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-sans">
+              Explore the project activity and evidence behind your Gitrium insights.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <span className="text-xs font-mono text-[#7A857E]">
-              Total Evidence Nodes: {evidenceNodes.length}
+              Total Evidence Signals: {evidenceNodes.length}
             </span>
           </div>
         </div>
@@ -138,7 +145,7 @@ export default function EvidenceExplorerPage() {
             <Search className="w-4 h-4 text-[#7A857E] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search by keyword, skill, or SHA..."
+              placeholder="Search by keyword, skill, or project..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-[6px] bg-[#151A17] border border-[#2E3E34] text-xs font-mono text-[#F7F6F1] placeholder-[#7A857E] focus:outline-none focus:border-[#159A72]"
@@ -148,16 +155,16 @@ export default function EvidenceExplorerPage() {
           <div className="flex flex-wrap gap-1.5 w-full sm:w-auto font-mono">
             {sourceTypes.map((t) => (
               <button
-                key={t}
-                onClick={() => setSelectedType(t)}
+                key={t.value}
+                onClick={() => setSelectedType(t.value)}
                 className={cn(
                   "px-3 py-1 rounded-[6px] text-xs transition-colors",
-                  selectedType === t
+                  selectedType === t.value
                     ? "bg-[#087453] text-[#F7F6F1] font-semibold border border-[#159A72]"
                     : "bg-[#151A17] text-[#A8B3AC] border border-[#27382F] hover:bg-[#1E2822] hover:text-[#F7F6F1]"
                 )}
               >
-                {t}
+                {t.label}
               </button>
             ))}
           </div>

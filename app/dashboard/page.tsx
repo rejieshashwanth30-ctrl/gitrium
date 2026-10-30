@@ -81,15 +81,15 @@ function DashboardHeaderAndTelemetry({
               </Link>
             )}
             <span className="text-[11px] text-[#7A857E] font-mono">
-              • {repositoriesCount > 0 ? `${repositoriesCount} repositories verified` : "Sync required to index codebases"}
+              • {repositoriesCount > 0 ? `${repositoriesCount} projects connected` : "Connect GitHub to get started"}
             </span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#F7F6F1] tracking-tight uppercase">
-            YOUR ENGINEERING EVIDENCE
+            YOUR WORK &amp; SKILLS
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] max-w-xl font-mono">
-            Deterministic AST provenance vault • Authenticated Developer: {developerName}
+          <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] max-w-xl font-sans">
+            Gitrium studies your GitHub work and turns it into clear insights about your projects, skills, experience, and growth.
           </p>
         </div>
 
@@ -113,7 +113,7 @@ function DashboardHeaderAndTelemetry({
             className="gap-2 border-[#2E3E34] bg-[#151A17] hover:bg-[#24352C] text-[#F7F6F1] text-xs sm:text-sm h-10 px-4"
           >
             <Sparkles className="w-4 h-4 text-[#159A72]" />
-            <span>Run AST Audit</span>
+            <span>Run Project Analysis</span>
           </Button>
 
           <Link href="/reports">
@@ -140,17 +140,17 @@ function DashboardHeaderAndTelemetry({
               {totalContributions}
             </div>
             <div className="text-sm font-mono font-semibold text-[#F7F6F1] mt-2">
-              Engineering Contributions
+              Contributions
             </div>
-            <p className="text-xs text-[#7A857E] font-mono mt-1">
-              Verified commit DAG nodes across production branches
+            <p className="text-xs text-[#7A857E] font-sans mt-1">
+              Commits recorded across your connected projects
             </p>
           </div>
 
           <div className="mt-5 pt-3 border-t border-[#24352C] flex items-center justify-between text-xs font-mono text-[#159A72]">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#159A72]" />
-              {totalContributions > 0 ? "Continuous Cadence Active" : "Awaiting First Sync"}
+              {totalContributions > 0 ? "Regular Activity Recorded" : "Awaiting First Sync"}
             </span>
             <span className="text-[#A8B3AC]">{totalContributions > 0 ? "Verified History" : "0 Days"}</span>
           </div>
@@ -160,28 +160,28 @@ function DashboardHeaderAndTelemetry({
         <div className="lg:col-span-7 grid grid-cols-2 gap-4">
           <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono">
             <div className="text-3xl sm:text-4xl font-extrabold text-[#F7F6F1]">{repositoriesCount}</div>
-            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Repositories Audited</div>
-            <div className="text-[11px] text-[#7A857E] mt-0.5">
-              {repositoriesCount > 0 ? "100% Synced & Analyzed" : "Pending Ingestion"}
+            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Projects Analyzed</div>
+            <div className="text-[11px] text-[#7A857E] mt-0.5 font-sans">
+              {repositoriesCount > 0 ? "Projects currently in your Gitrium analysis" : "Connect GitHub to analyze"}
             </div>
           </div>
 
           <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono">
             <div className="text-3xl sm:text-4xl font-extrabold text-[#F7F6F1]">{technologiesCount}</div>
-            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Technologies Detected</div>
-            <div className="text-[11px] text-[#7A857E] mt-0.5">Frameworks &amp; Manifests</div>
+            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Technologies Found</div>
+            <div className="text-[11px] text-[#7A857E] mt-0.5 font-sans">Languages, frameworks &amp; tools detected</div>
           </div>
 
           <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono">
             <div className="text-3xl sm:text-4xl font-extrabold text-[#159A72]">{skillsCount}</div>
-            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Evidence Skills</div>
-            <div className="text-[11px] text-[#7A857E] mt-0.5">Deterministic AST Evidence</div>
+            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Skills With Strong Evidence</div>
+            <div className="text-[11px] text-[#7A857E] mt-0.5 font-sans">Skills supported by your project activity</div>
           </div>
 
           <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono">
             <div className="text-3xl sm:text-4xl font-extrabold text-[#F7F6F1]">{evidenceSignalsCount}</div>
             <div className="text-xs font-bold text-[#A8B3AC] mt-1">Evidence Signals</div>
-            <div className="text-[11px] text-[#D97745] mt-0.5">Audited Evidence Nodes</div>
+            <div className="text-[11px] text-[#D97745] mt-0.5 font-sans">Signals found across your projects and activity</div>
           </div>
         </div>
       </div>
@@ -447,7 +447,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-mono font-bold text-[#F7F6F1] tracking-wider uppercase flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#159A72]" />
-                <span>Skill Evidence Bars</span>
+                <span>Your Top Skills</span>
               </h2>
               <Link href="/skills" className="text-xs font-mono text-[#159A72] hover:underline">
                 All Skills ({skills.length}) →
@@ -457,10 +457,10 @@ export default function DashboardPage() {
             {skills.length === 0 ? (
               <div className="rounded-[11px] border border-[#27382F] bg-[#18201C] p-6 text-center space-y-2">
                 <p className="text-xs font-mono text-[#A8B3AC]">
-                  Insufficient evidence for a reliable analysis.
+                  Connect your GitHub account to analyze your skills.
                 </p>
-                <p className="text-[11px] font-mono text-[#7A857E]">
-                  Skill proofs are mathematically computed once codebase commits and AST syntax trees are ingested.
+                <p className="text-[11px] font-sans text-[#7A857E]">
+                  Skills are calculated from your real project commits and code activity once GitHub is connected.
                 </p>
               </div>
             ) : (
@@ -470,7 +470,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[#F7F6F1]">{sk.name.toUpperCase()}</span>
                       <span className="text-[10px] font-bold text-[#159A72] bg-[#18352B] px-2 py-0.5 rounded-[4px] border border-[#27382F]">
-                        CONFIDENCE: {sk.proficiencyScore >= 80 ? "HIGH" : sk.proficiencyScore >= 60 ? "MODERATE" : "EVALUATING"}
+                        EVIDENCE: {sk.proficiencyScore >= 80 ? "STRONG" : sk.proficiencyScore >= 60 ? "MODERATE" : "EMERGING"}
                       </span>
                     </div>
 
@@ -483,9 +483,9 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex justify-between text-[11px] text-[#7A857E]">
-                      <span>Repositories: {sk.projectCount || 1}</span>
-                      <span>Evidence Points: {sk.evidenceCount}</span>
-                      <span className="text-[#F7F6F1]">{sk.proficiencyScore}% AST Score</span>
+                      <span>Projects: {sk.projectCount || 1}</span>
+                      <span>Contributions: {sk.evidenceCount}</span>
+                      <span className="text-[#F7F6F1]">{sk.proficiencyScore}% Evidence Strength</span>
                     </div>
                   </div>
                 ))}
@@ -498,10 +498,10 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-mono font-bold text-[#F7F6F1] tracking-wider uppercase flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#159A72]" />
-                <span>Integrity Confidence</span>
+                <span>Development Consistency</span>
               </h2>
               <Link href="/integrity" className="text-xs font-mono text-[#159A72] hover:underline">
-                Audit Details →
+                View Details →
               </Link>
             </div>
 
@@ -509,19 +509,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Provenance Activity Feed */}
+        {/* Recent Project Activity Feed */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-mono font-bold text-[#F7F6F1] tracking-wider uppercase flex items-center gap-2">
               <Clock className="w-4 h-4 text-[#7A857E]" />
-              <span>Recent Provenance Feed</span>
+              <span>Recent Project Activity</span>
             </h2>
           </div>
 
           <div className="rounded-[11px] border border-[#27382F] bg-[#18201C] p-4 sm:p-5 divide-y divide-[#24352C] shadow-subtle">
             {repositories.length === 0 ? (
               <p className="text-xs font-mono text-[#7A857E] text-center py-4">
-                No recent provenance events. Synchronize your repositories to record cryptographic evidence.
+                No recent activity recorded. Connect your repositories to see recent updates.
               </p>
             ) : (
               repositories.slice(0, 3).map((repo) => (

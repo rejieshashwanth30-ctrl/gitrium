@@ -79,10 +79,10 @@ export default function RepositoriesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#24352C]">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold font-mono text-[#F7F6F1] tracking-tight uppercase">
-              Repository Intelligence
+              Your Projects
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-mono">
-              Deterministic AST audits, modularity analysis, and concrete evidence across your codebases
+            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-sans">
+              Projects analyzed by Gitrium, including languages, frameworks, and contribution history.
             </p>
           </div>
 
@@ -105,7 +105,7 @@ export default function RepositoriesPage() {
               className="gap-2 bg-[#087453] hover:bg-[#159A72] text-white"
             >
               <Plus className="w-4 h-4" />
-              <span>Analyze New Repository</span>
+              <span>Analyze New Project</span>
             </Button>
           </div>
         </div>
@@ -222,11 +222,11 @@ export default function RepositoriesPage() {
                   {/* Metrics */}
                   <div className="grid grid-cols-2 gap-2 pt-3 border-t border-[#24352C] text-xs font-mono">
                     <div>
-                      <span className="text-[10px] text-[#7A857E] uppercase block">Complexity</span>
+                      <span className="text-[10px] text-[#7A857E] uppercase block">Project Size</span>
                       <span className="font-bold text-[#F7F6F1]">{repo.complexity}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-[#7A857E] uppercase block">Primary Ecosystem</span>
+                      <span className="text-[10px] text-[#7A857E] uppercase block">Main Technology</span>
                       <span className="font-bold text-[#159A72]">{repo.primaryLanguage}</span>
                     </div>
                   </div>
@@ -243,7 +243,7 @@ export default function RepositoriesPage() {
                     href={`/repositories/${repo.id}`}
                     className="text-[#159A72] hover:underline font-semibold flex items-center gap-1"
                   >
-                    <span>Inspect Audit</span>
+                    <span>View Project Details</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>

@@ -203,11 +203,11 @@ export default function ReportDetailPage() {
         <div className="p-5 rounded-[8px] bg-[#F7F6F1] border border-[#DDE1DC] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
           <div className="space-y-1 text-left">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#159A72]">
-              Deterministic AST Synthesis Score
+              OVERALL EVIDENCE SCORE
             </span>
             <h2 className="text-xl font-bold font-mono text-[#17201B]">Overall Evidence Score</h2>
-            <p className="text-xs text-[#56635C] max-w-md">
-              Synthesized from {repoScope.length} audited repository history {repoScope.length === 1 ? "tree" : "trees"}, commit depth, and framework manifests.
+            <p className="text-xs text-[#56635C] max-w-md font-sans">
+              Based on your project history, contributions, technologies, and code structure. This score summarizes how much usable project evidence Gitrium found.
             </p>
           </div>
 
@@ -225,10 +225,10 @@ export default function ReportDetailPage() {
         {/* Executive Summary */}
         <div className="space-y-2 font-mono">
           <h3 className="text-xs font-bold uppercase tracking-wider text-[#7A857E]">
-            Executive Audit Summary:
+            Executive Summary:
           </h3>
           <p className="text-xs sm:text-sm text-[#17201B] leading-relaxed p-4 rounded-[6px] bg-[#F7F6F1] border border-[#DDE1DC] font-sans">
-            {reportData.summary || ai.summary || ai.engineeringSummary || "Audited code evidence confirms active author provenance across the specified codebases."}
+            {reportData.summary || ai.summary || ai.engineeringSummary || "Gitrium found strong evidence of consistent development activity across the analyzed projects."}
           </p>
         </div>
 
@@ -238,7 +238,7 @@ export default function ReportDetailPage() {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#159A72]" />
               <span className="font-bold uppercase tracking-wider text-[#087453] text-xs">
-                AI Evidence Interpretation Layer
+                AI Insights &amp; Interpretation
               </span>
             </div>
             <span className="text-[11px] text-[#7A857E]">

@@ -56,13 +56,13 @@ export default function CareerIntelligencePage() {
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] bg-[#18352B] border border-[#27382F] text-[#159A72] text-xs font-mono font-semibold mb-2">
               <Briefcase className="w-3.5 h-3.5" />
-              <span>ROLE EVIDENCE ALIGNMENT</span>
+              <span>CAREER MATCHES</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold font-mono text-[#F7F6F1] tracking-tight uppercase">
-              Where Your Work Can Take You
+              Career Matches
             </h1>
-            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-mono">
-              Observed engineering evidence alignment across industry engineering benchmarks • Not a hiring prediction.
+            <p className="mt-1 text-xs sm:text-sm text-[#A8B3AC] font-sans">
+              Based on the technologies and project experience found in your GitHub activity.
             </p>
           </div>
         </div>
@@ -74,12 +74,12 @@ export default function CareerIntelligencePage() {
               <Briefcase className="w-6 h-6" />
             </div>
             <h3 className="text-base font-bold font-mono text-[#F7F6F1]">
-              {!githubConnected ? "GitHub not connected." : "Insufficient evidence for role alignment."}
+              {!githubConnected ? "GitHub not connected." : "Connect GitHub to see career matches."}
             </h3>
-            <p className="text-xs text-[#A8B3AC] font-mono max-w-md mx-auto">
+            <p className="text-xs text-[#A8B3AC] font-sans max-w-md mx-auto">
               {!githubConnected
-                ? "Connect GitHub to analyze your codebases and evaluate your demonstrable role competency."
-                : "Role alignments are calculated against verified code repositories. Synchronize codebases to evaluate observed role alignment."}
+                ? "Connect GitHub to analyze your projects and discover matching engineering roles."
+                : "Role alignments are calculated from the projects and technologies you work with. Connect your repositories to get started."}
             </p>
             {!githubConnected ? (
               <div className="pt-2">
@@ -116,10 +116,10 @@ export default function CareerIntelligencePage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#159A72] uppercase tracking-wider">
                     <Sparkles className="w-4 h-4 text-[#159A72]" />
-                    <span>AI Career Trajectory &amp; Role Grounding</span>
+                    <span>AI Insights: Career Direction</span>
                   </div>
                   <span className="text-[10px] font-mono text-[#7A857E]">
-                    Evidence Basis: {aiInsights.evidenceBasis.repositoriesCount} repos • {aiInsights.evidenceBasis.commitsCount} commits
+                    Based on {aiInsights.evidenceBasis.repositoriesCount} projects · {aiInsights.evidenceBasis.commitsCount} commits
                   </span>
                 </div>
 

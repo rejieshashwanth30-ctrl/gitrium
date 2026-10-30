@@ -77,8 +77,8 @@ export function AnalysisScannerModal({
       isOpen={isOpen}
       onClose={onClose}
       size="lg"
-      title="Gitrium AST & Provenance Scanner"
-      description={`Synthesizing verifiable evidence for ${repositoryName}`}
+      title="Gitrium Project Scanner"
+      description={`Reviewing project work and skill evidence for ${repositoryName}`}
     >
       <div className="space-y-5 text-[#17201B]">
         {/* Progress Bar & Header */}
@@ -88,12 +88,12 @@ export function AnalysisScannerModal({
               {!isDone ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ANALYZING CODEBASE ARTIFACTS...
+                  REVIEWING PROJECT WORK...
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#159A72]" />
-                  AUDIT GENERATED SUCCESSFULLY
+                  ANALYSIS GENERATED SUCCESSFULLY
                 </>
               )}
             </span>
@@ -115,7 +115,7 @@ export function AnalysisScannerModal({
         <div className="rounded-[8px] border border-[#27382F] bg-[#151A17] p-4 font-mono text-xs max-h-60 overflow-y-auto space-y-2 text-[#F7F6F1] shadow-inner">
           <div className="flex items-center gap-2 pb-2 border-b border-[#24352C] text-[#7A857E] text-[11px]">
             <Terminal className="w-3.5 h-3.5 text-[#159A72]" />
-            <span>gitrium-provenance-engine v1.4.0 — target: {repositoryName}</span>
+            <span>gitrium-analysis-engine — target: {repositoryName}</span>
           </div>
 
           {ANALYSIS_STAGES.map((stage, idx) => {
@@ -150,8 +150,8 @@ export function AnalysisScannerModal({
 
         {/* Footer Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#EFEEE8]">
-          <span className="text-xs text-[#7A857E] font-mono">
-            {isDone ? "Evidence compilation complete." : "Deterministic tree extraction running..."}
+          <span className="text-xs text-[#7A857E] font-sans">
+            {isDone ? "Project analysis complete." : "Reviewing project work and activity..."}
           </span>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
