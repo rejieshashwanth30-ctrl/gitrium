@@ -119,8 +119,19 @@ export async function generateUserEvidenceGraph(
     });
   });
 
-  // 4. Skill Nodes linked to developer
-  user.skills.forEach((skill) => {
+  // 4. Skill Nodes linked to developer (filtered strictly to technologies in audited repositories)
+  const relevantTechNames = new Set(
+    user.repositories.flatMap((r) => [
+      (r.primaryLanguage || "").toLowerCase(),
+      ...(r.technologies || []).map((t) => t.name.toLowerCase()),
+    ]).filter(Boolean)
+  );
+
+  const activeSkills = user.skills.filter((s) =>
+    relevantTechNames.size === 0 || relevantTechNames.has(s.name.toLowerCase())
+  );
+
+  activeSkills.forEach((skill) => {
     const skillNodeId = `node-skill-${skill.id}`;
     nodes.push({
       id: skillNodeId,

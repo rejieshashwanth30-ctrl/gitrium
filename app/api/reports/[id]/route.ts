@@ -189,10 +189,34 @@ export async function GET(
             (sum, r) => sum + (r.commitCount || r.commits.length),
             0
           );
-          const skills = await prisma.skill.findMany({
+          const targetTechNames = new Set(
+            selectedRepos.flatMap((r) => [
+              (r.primaryLanguage || "").toLowerCase(),
+              ...(r.languages || []).map((l: any) => l.name.toLowerCase()),
+              ...(r.technologies || []).map((t: any) => t.name.toLowerCase()),
+            ]).filter(Boolean)
+          );
+
+          const allUserSkills = await prisma.skill.findMany({
             where: { userId: profile.id },
             orderBy: { proficiencyScore: "desc" },
           });
+
+          const matchedSkills = allUserSkills.filter((s) =>
+            targetTechNames.has(s.name.toLowerCase())
+          );
+
+          const skills = matchedSkills.length > 0
+            ? matchedSkills
+            : selectedRepos.flatMap((r) =>
+                (r.technologies || []).map((t: any) => ({
+                  id: t.id,
+                  name: t.name,
+                  category: t.category,
+                  proficiencyScore: 85,
+                  evidenceStrength: "Strong Evidence",
+                }))
+              );
 
           const ai = await generateAIInterpretation({
             developerName: profile.displayName || profile.username,

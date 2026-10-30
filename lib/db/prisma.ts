@@ -1,4 +1,10 @@
 import { PrismaClient } from "@prisma/client";
+import dns from "node:dns";
+
+// Ensure dual-stack environments and local ISPs prioritize IPv4 for PostgreSQL connections
+if (typeof dns?.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
+}
 
 const prismaClientSingleton = () => {
   return new PrismaClient({

@@ -53,7 +53,7 @@ export default function RepositoryDetailPage() {
               techNames.includes(s.name.toLowerCase()) ||
               s.name.toLowerCase() === (targetRepo.primaryLanguage || "").toLowerCase()
           );
-          setSkills(relevant.length > 0 ? relevant : allSkills.slice(0, 3));
+          setSkills(relevant);
         }
       } catch (err) {
         console.warn("Error loading repository detail:", err);

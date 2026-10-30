@@ -153,10 +153,10 @@ async function executeSync(
 
   const octokit = createGitHubClient(token);
 
-  // 3. Fetch user repositories (paginated up to 5 pages / 250 repositories)
+  // 3. Fetch user repositories (paginated up to 10 pages / 1,000 repositories, 100/page)
   let repos: NormalizedRepository[] = [];
   try {
-    repos = await fetchUserRepositories(octokit, 5);
+    repos = await fetchUserRepositories(octokit, 10);
     coverage.repositories = repos.length > 0 ? "COMPLETE" : "COMPLETE"; // 0 repos is a valid empty set
     console.log(`[GitHub Sync] Fetched ${repos.length} repositories from GitHub for @${verification.user?.login}`);
   } catch (err: any) {
@@ -309,11 +309,15 @@ async function executeSync(
         });
       }
 
-      // 9. Fetch Commits (for active non-fork repositories)
+      // 9. Fetch Commits (paginated up to 10 pages / 1,000 commits per repository)
       let repoCommitsCount = 0;
       if (!repoData.isFork) {
         try {
-          const commits: NormalizedCommit[] = await fetchRepositoryCommits(octokit, owner, repoName, 30);
+          const commits: NormalizedCommit[] = await fetchRepositoryCommits(octokit, owner, repoName, {
+            maxPages: 10,
+            perPage: 100,
+            maxTotalCommits: 1000,
+          });
           repoCommitsCount = commits.length;
           totalCommits += commits.length;
 
@@ -348,10 +352,14 @@ async function executeSync(
           commitFailures++;
         }
 
-        // 10. Fetch PRs
+        // 10. Fetch PRs (paginated up to 5 pages / 500 PRs per repository)
         let repoPRsCount = 0;
         try {
-          const prs: NormalizedPullRequest[] = await fetchRepositoryPullRequests(octokit, owner, repoName, 20);
+          const prs: NormalizedPullRequest[] = await fetchRepositoryPullRequests(octokit, owner, repoName, {
+            maxPages: 5,
+            perPage: 100,
+            maxTotalPRs: 500,
+          });
           repoPRsCount = prs.length;
           totalPRs += prs.length;
 
@@ -385,12 +393,17 @@ async function executeSync(
           prFailures++;
         }
 
-        // Update repository counters directly for high-performance dashboard queries
+        // Update repository counters with exact database row counts for 100% data integrity
+        const [totalRepoCommits, totalRepoPRs] = await Promise.all([
+          prisma.commit.count({ where: { repositoryId: repository.id } }),
+          prisma.pullRequest.count({ where: { repositoryId: repository.id } }),
+        ]);
+
         await prisma.repository.update({
           where: { id: repository.id },
           data: {
-            commitCount: repoCommitsCount,
-            prCount: repoPRsCount,
+            commitCount: totalRepoCommits,
+            prCount: totalRepoPRs,
           },
         });
       }

@@ -19,12 +19,36 @@ export interface NormalizedRepository {
   pushedAt: Date | null;
 }
 
-export async function fetchUserRepositories(
+export interface FetchRepositoriesOptions {
+  /** Maximum number of pages to fetch (up to 100 repositories per page). Default: 10 (up to 1,000 repositories) */
+  maxPages?: number;
+  /** Repositories per page (max 100). Default: 100 */
+  perPage?: number;
+}
+
+export interface PaginatedRepositoriesResult {
+  repositories: NormalizedRepository[];
+  isComplete: boolean;
+  totalFetched: number;
+  pagesFetched: number;
+}
+
+/**
+ * Paginates through authenticated user repositories.
+ * Fetches repos page-by-page (100 per page) up to maxPages.
+ * Distinguishes complete vs truncated results with isComplete flag.
+ */
+export async function fetchUserRepositoriesPaginated(
   octokit: Octokit,
-  maxPages = 5
-): Promise<NormalizedRepository[]> {
+  options?: FetchRepositoriesOptions
+): Promise<PaginatedRepositoriesResult> {
+  const maxPages = options?.maxPages ?? 10;
+  const perPage = Math.min(options?.perPage ?? 100, 100);
+
   const repositories: NormalizedRepository[] = [];
+  const seenIds = new Set<string>();
   let page = 1;
+  let isComplete = false;
 
   while (page <= maxPages) {
     try {
@@ -33,17 +57,22 @@ export async function fetchUserRepositories(
         affiliation: "owner,collaborator",
         sort: "updated",
         direction: "desc",
-        per_page: 50,
+        per_page: perPage,
         page,
       });
 
       if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
+        isComplete = true;
         break;
       }
 
       for (const repo of response.data) {
+        const repoId = repo.id.toString();
+        if (seenIds.has(repoId)) continue;
+        seenIds.add(repoId);
+
         repositories.push({
-          githubRepoId: repo.id.toString(),
+          githubRepoId: repoId,
           name: repo.name,
           fullName: repo.full_name,
           description: repo.description || null,
@@ -62,13 +91,14 @@ export async function fetchUserRepositories(
         });
       }
 
-      if (response.data.length < 50) {
+      if (response.data.length < perPage) {
+        isComplete = true;
         break;
       }
 
       page++;
     } catch (error: any) {
-      console.error(`Error fetching page ${page} of repositories:`, error?.message || error);
+      console.error(`[GitHub Repositories] Page ${page} failed:`, error?.message || error);
       // If the very first page failed, throw so the caller knows authentication or API failed
       if (page === 1) {
         throw error;
@@ -77,5 +107,18 @@ export async function fetchUserRepositories(
     }
   }
 
-  return repositories;
+  return {
+    repositories,
+    isComplete,
+    totalFetched: repositories.length,
+    pagesFetched: page,
+  };
+}
+
+export async function fetchUserRepositories(
+  octokit: Octokit,
+  maxPages = 10
+): Promise<NormalizedRepository[]> {
+  const result = await fetchUserRepositoriesPaginated(octokit, { maxPages, perPage: 100 });
+  return result.repositories;
 }

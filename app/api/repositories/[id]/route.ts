@@ -41,8 +41,8 @@ export async function GET(
         include: {
           technologies: true,
           languages: true,
-          commits: { take: 30, orderBy: { authorDate: "desc" } },
-          pullRequests: { take: 10, orderBy: { createdAt: "desc" } },
+          commits: { take: 100, orderBy: { authorDate: "desc" } },
+          pullRequests: { take: 50, orderBy: { createdAt: "desc" } },
           projectAnalysis: true,
         },
       });

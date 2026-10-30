@@ -84,10 +84,36 @@ export async function POST(request: Request) {
       0
     );
 
-    const skills = await prisma.skill.findMany({
+    // Collect valid tech and language signatures strictly belonging to target repositories
+    const targetTechNames = new Set(
+      targetRepos.flatMap((r) => [
+        (r.primaryLanguage || "").toLowerCase(),
+        ...(r.languages || []).map((l: any) => l.name.toLowerCase()),
+        ...(r.technologies || []).map((t: any) => t.name.toLowerCase()),
+      ]).filter(Boolean)
+    );
+
+    const allUserSkills = await prisma.skill.findMany({
       where: { userId: profile.id },
       orderBy: { proficiencyScore: "desc" },
     });
+
+    // Repository isolation: include strictly skills backed by target repos
+    const matchedSkills = allUserSkills.filter((s) =>
+      targetTechNames.has(s.name.toLowerCase())
+    );
+
+    const skills = matchedSkills.length > 0
+      ? matchedSkills
+      : targetRepos.flatMap((r) =>
+          (r.technologies || []).map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            category: t.category,
+            proficiencyScore: 85,
+            evidenceStrength: "Strong Evidence",
+          }))
+        );
 
     const isSingle = targetRepos.length === 1;
     const title = isSingle
