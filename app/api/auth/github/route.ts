@@ -16,7 +16,13 @@ export async function GET(request: Request) {
 
   // Determine application origin dynamically
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";
-  const protocol = request.headers.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+  const isLocal =
+    host.startsWith("localhost") ||
+    host.startsWith("127.0.0.1") ||
+    host.startsWith("192.168.") ||
+    host.startsWith("10.") ||
+    host.includes(":3000");
+  const protocol = request.headers.get("x-forwarded-proto") || (isLocal ? "http" : "https");
   const origin = `${protocol}://${host}`;
   const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
 
