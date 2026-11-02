@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Github, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { initiateGitHubConnect } from "@/lib/auth/githubAuthClient";
+import { gitriumApi } from "@/lib/services/gitriumApiService";
 
 function LoginForm() {
   const router = useRouter();
@@ -18,6 +19,11 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Clear any lingering client-side cache when loading the login screen
+  React.useEffect(() => {
+    gitriumApi.clearCache();
+  }, []);
 
   const handleGitHubAuth = async () => {
     if (isLoading) return;

@@ -72,25 +72,29 @@ class ProductionGitriumApiService implements IGitriumService {
   private cache = new Map<string, CacheEntry<any>>();
   private inFlight = new Map<string, Promise<any>>();
   private readonly DEFAULT_TTL = 30_000; // 30 seconds
+  private activeUserId: string | null = null;
 
   private getCached<T>(key: string): T | null {
-    const entry = this.cache.get(key);
+    const namespacedKey = this.activeUserId ? `${this.activeUserId}:${key}` : key;
+    const entry = this.cache.get(namespacedKey);
     if (!entry) return null;
     if (Date.now() - entry.timestamp > this.DEFAULT_TTL) {
-      this.cache.delete(key);
+      this.cache.delete(namespacedKey);
       return null;
     }
     return entry.data;
   }
 
   private setCache<T>(key: string, data: T) {
-    this.cache.set(key, { data, timestamp: Date.now() });
+    const namespacedKey = this.activeUserId ? `${this.activeUserId}:${key}` : key;
+    this.cache.set(namespacedKey, { data, timestamp: Date.now() });
   }
 
   public clearCache(prefix?: string) {
     if (prefix) {
+      const matchPrefix = this.activeUserId ? `${this.activeUserId}:${prefix}` : prefix;
       this.cache.forEach((_, key) => {
-        if (key.startsWith(prefix)) {
+        if (key.startsWith(matchPrefix) || key.startsWith(prefix)) {
           this.cache.delete(key);
         }
       });
@@ -101,13 +105,14 @@ class ProductionGitriumApiService implements IGitriumService {
   }
 
   private async fetchWithCache<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
+    const namespacedKey = this.activeUserId ? `${this.activeUserId}:${key}` : key;
     const cached = this.getCached<T>(key);
     if (cached !== null) {
       return cached;
     }
 
-    if (this.inFlight.has(key)) {
-      return this.inFlight.get(key) as Promise<T>;
+    if (this.inFlight.has(namespacedKey)) {
+      return this.inFlight.get(namespacedKey) as Promise<T>;
     }
 
     const promise = fetcher()
@@ -118,10 +123,10 @@ class ProductionGitriumApiService implements IGitriumService {
         return data;
       })
       .finally(() => {
-        this.inFlight.delete(key);
+        this.inFlight.delete(namespacedKey);
       });
 
-    this.inFlight.set(key, promise);
+    this.inFlight.set(namespacedKey, promise);
     return promise;
   }
 
@@ -134,6 +139,13 @@ class ProductionGitriumApiService implements IGitriumService {
             const data = await res.json();
             if (data.profile) {
               const p = data.profile;
+              if (p.id) {
+                if (this.activeUserId && this.activeUserId !== p.id) {
+                  // User switched: purge all cached data from previous user immediately
+                  this.clearCache();
+                }
+                this.activeUserId = p.id;
+              }
               return {
                 user: {
                   id: p.id,
@@ -477,12 +489,18 @@ class ProductionGitriumApiService implements IGitriumService {
             if (Array.isArray(data.matches)) {
               return data.matches.map((m: any, idx: number) => ({
                 id: `match_${idx}`,
-                roleTitle: m.roleTitle,
-                alignmentScore: m.alignmentScore,
-                matchConfidence: m.matchConfidence,
-                demonstratedSkills: m.strengths || [],
-                skillGaps: m.skillGaps || [],
-                recommendedProjects: m.recommendedProjects || [],
+                roleTitle: m.roleTitle || "Software Engineer",
+                roleDescription: m.roleDescription || "Engineering role identified through codebase analysis.",
+                matchPercentage: typeof m.matchPercentage === "number" ? m.matchPercentage : (m.alignmentScore || 0),
+                alignment: m.alignment || m.matchConfidence || "Developing",
+                demonstratedSkills: Array.isArray(m.demonstratedSkills) ? m.demonstratedSkills : (m.strengths || []),
+                evidenceBackedStrengths: Array.isArray(m.evidenceBackedStrengths)
+                  ? m.evidenceBackedStrengths
+                  : (Array.isArray(m.strengths) ? m.strengths.map((s: string) => `Demonstrated implementation in ${s}`) : []),
+                missingEvidenceAreas: Array.isArray(m.missingEvidenceAreas)
+                  ? m.missingEvidenceAreas
+                  : (Array.isArray(m.skillGaps) ? m.skillGaps : []),
+                recommendedProjects: Array.isArray(m.recommendedProjects) ? m.recommendedProjects : [],
               }));
             }
           }

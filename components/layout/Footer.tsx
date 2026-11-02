@@ -51,8 +51,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/career" className="text-[#A8B3AC] hover:text-[#F7F6F1] transition-colors">
-                  Career Alignment
+                <Link href="/analysis" className="text-[#A8B3AC] hover:text-[#F7F6F1] transition-colors">
+                  Project Analysis
                 </Link>
               </li>
             </ul>

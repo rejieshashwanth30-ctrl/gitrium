@@ -1,3 +1,5 @@
+import { FEATURE_FLAGS } from "@/lib/config/features";
+
 export const PRODUCT_INFO = {
   name: "ADYK GITRIUM",
   tagline: "THE TRUSTED VAULT OF CODE EVIDENCE",
@@ -23,7 +25,6 @@ export const NAV_LINKS = [
   { label: "Features", href: "#features" },
   { label: "Evidence Graph", href: "#evidence-graph" },
   { label: "Integrity", href: "#integrity" },
-  { label: "Career", href: "#career" },
   { label: "About", href: "#about" },
 ];
 
@@ -32,7 +33,6 @@ export const MOBILE_NAV_LINKS = [
   { label: "Features", href: "#features" },
   { label: "Evidence Graph", href: "#evidence-graph" },
   { label: "Integrity", href: "#integrity" },
-  { label: "Career", href: "#career" },
   { label: "About", href: "#about" },
   { label: "Contact", href: "#contact" },
 ];
@@ -45,7 +45,9 @@ export const DASHBOARD_NAV = [
   { label: "Evidence", href: "/evidence", icon: "FileCode" },
   { label: "Code Integrity", href: "/integrity", icon: "ShieldCheck" },
   { label: "Project Analysis", href: "/analysis", icon: "Scan" },
-  { label: "Career Match", href: "/career", icon: "Briefcase" },
+  ...(FEATURE_FLAGS.CAREER_MATCH
+    ? [{ label: "Career Match", href: "/career", icon: "Briefcase" }]
+    : []),
   { label: "Reports", href: "/reports", icon: "FileText" },
   { label: "Profile", href: "/profile", icon: "UserCheck" },
   { label: "Settings", href: "/settings", icon: "Settings" },
