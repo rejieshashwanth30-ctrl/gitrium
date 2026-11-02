@@ -139,12 +139,12 @@ export function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           {/* LEFT: Gitrium Official Logo */}
-          <div className="flex items-center shrink-0">
+          <div className="flex items-center shrink-0 min-w-0">
             <GitriumLogo
               variant="full"
               size="sm"
               textColor="light"
-              className="w-[125px] sm:w-[135px] lg:w-[145px] max-w-[145px]"
+              className="w-auto max-w-[135px] sm:max-w-[160px] lg:max-w-[170px]"
             />
           </div>
 

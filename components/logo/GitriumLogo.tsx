@@ -115,7 +115,7 @@ export function GitriumLogo({
           </div>
           <span
             className={cn(
-              "mt-0.5 text-[8.5px] tracking-wider uppercase font-semibold font-mono",
+              "mt-0.5 text-[8.5px] tracking-wider uppercase font-semibold font-mono hidden sm:block whitespace-nowrap",
               textColor === "dark" ? "text-[#56635C]" : "text-[#7A857E]"
             )}
           >

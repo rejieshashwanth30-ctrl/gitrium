@@ -94,37 +94,37 @@ function DashboardHeaderAndTelemetry({
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 w-full sm:w-auto">
           <Button
             variant="emerald"
             size="md"
             onClick={onSync}
             isLoading={isSyncing}
-            className="gap-2 bg-[#087453] hover:bg-[#159A72] text-white border-none shadow-xs text-xs sm:text-sm h-10 px-4"
+            className="order-1 gap-2 bg-[#087453] hover:bg-[#159A72] text-white border-none shadow-xs text-xs sm:text-sm h-10 px-3 sm:px-4 justify-center col-span-1"
           >
-            <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
-            <span>{isSyncing ? "Syncing..." : "Sync GitHub"}</span>
+            <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isSyncing ? "animate-spin" : ""}`} />
+            <span className="whitespace-nowrap">{isSyncing ? "Syncing..." : "Sync GitHub"}</span>
           </Button>
+
+          <Link href="/reports" className="order-2 sm:order-3 col-span-1 w-full">
+            <Button
+              variant="outline"
+              size="md"
+              className="w-full border-[#2E3E34] bg-[#151A17] hover:bg-[#24352C] text-[#F7F6F1] text-xs sm:text-sm h-10 px-3 sm:px-4 justify-center"
+            >
+              <span className="whitespace-nowrap">Export Report</span>
+            </Button>
+          </Link>
 
           <Button
             variant="outline"
             size="md"
             onClick={onRunAnalysis}
-            className="gap-2 border-[#2E3E34] bg-[#151A17] hover:bg-[#24352C] text-[#F7F6F1] text-xs sm:text-sm h-10 px-4"
+            className="order-3 sm:order-2 col-span-2 sm:col-span-1 gap-2 border-[#2E3E34] bg-[#151A17] hover:bg-[#24352C] text-[#F7F6F1] text-xs sm:text-sm h-10 px-4 justify-center"
           >
-            <Sparkles className="w-4 h-4 text-[#159A72]" />
-            <span>Run Project Analysis</span>
+            <Sparkles className="w-4 h-4 text-[#159A72] shrink-0" />
+            <span className="whitespace-nowrap">Run Project Analysis</span>
           </Button>
-
-          <Link href="/reports">
-            <Button
-              variant="outline"
-              size="md"
-              className="border-[#2E3E34] bg-[#151A17] hover:bg-[#24352C] text-[#F7F6F1] text-xs sm:text-sm h-10 px-4"
-            >
-              <span>Export Report</span>
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -147,41 +147,41 @@ function DashboardHeaderAndTelemetry({
             </p>
           </div>
 
-          <div className="mt-5 pt-3 border-t border-[#24352C] flex items-center justify-between text-xs font-mono text-[#159A72]">
+          <div className="mt-5 pt-3 border-t border-[#24352C] flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-[#159A72]">
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#159A72]" />
-              {totalContributions > 0 ? "Regular Activity Recorded" : "Awaiting First Sync"}
+              <span className="w-2 h-2 rounded-full bg-[#159A72] shrink-0" />
+              <span>{totalContributions > 0 ? "Regular Activity Recorded" : "Awaiting First Sync"}</span>
             </span>
             <span className="text-[#A8B3AC]">{totalContributions > 0 ? "Verified History" : "0 Days"}</span>
           </div>
         </div>
 
         {/* Surrounding Telemetry Grid (Right Column) */}
-        <div className="lg:col-span-7 grid grid-cols-2 gap-4">
-          <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono">
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#F7F6F1]">{repositoriesCount}</div>
-            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Projects Analyzed</div>
-            <div className="text-[11px] text-[#7A857E] mt-0.5 font-sans">
+        <div className="lg:col-span-7 grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="p-3.5 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono min-w-0">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#F7F6F1]">{repositoriesCount}</div>
+            <div className="text-xs font-bold text-[#A8B3AC] mt-1 truncate">Projects Analyzed</div>
+            <div className="text-[11px] text-[#7A857E] mt-0.5 font-sans line-clamp-2">
               {repositoriesCount > 0 ? "Projects currently in your Gitrium analysis" : "Connect GitHub to analyze"}
             </div>
           </div>
 
-          <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono">
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#F7F6F1]">{technologiesCount}</div>
-            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Technologies Found</div>
-            <div className="text-[11px] text-[#7A857E] mt-0.5 font-sans">Languages, frameworks &amp; tools detected</div>
+          <div className="p-3.5 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono min-w-0">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#F7F6F1]">{technologiesCount}</div>
+            <div className="text-xs font-bold text-[#A8B3AC] mt-1 truncate">Technologies Found</div>
+            <div className="text-[11px] text-[#7A857E] mt-0.5 font-sans line-clamp-2">Languages, frameworks &amp; tools detected</div>
           </div>
 
-          <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono">
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#159A72]">{skillsCount}</div>
-            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Skills With Strong Evidence</div>
-            <div className="text-[11px] text-[#7A857E] mt-0.5 font-sans">Skills supported by your project activity</div>
+          <div className="p-3.5 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono min-w-0">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#159A72]">{skillsCount}</div>
+            <div className="text-xs font-bold text-[#A8B3AC] mt-1 truncate">Skills With Strong Evidence</div>
+            <div className="text-[11px] text-[#7A857E] mt-0.5 font-sans line-clamp-2">Skills supported by your project activity</div>
           </div>
 
-          <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono">
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#F7F6F1]">{evidenceSignalsCount}</div>
-            <div className="text-xs font-bold text-[#A8B3AC] mt-1">Evidence Signals</div>
-            <div className="text-[11px] text-[#D97745] mt-0.5 font-sans">Signals found across your projects and activity</div>
+          <div className="p-3.5 sm:p-5 rounded-[8px] bg-[#151A17] border border-[#24352C] font-mono min-w-0">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#F7F6F1]">{evidenceSignalsCount}</div>
+            <div className="text-xs font-bold text-[#A8B3AC] mt-1 truncate">Evidence Signals</div>
+            <div className="text-[11px] text-[#D97745] mt-0.5 font-sans line-clamp-2">Signals found across your projects</div>
           </div>
         </div>
       </div>

@@ -132,51 +132,62 @@ export default function RepositoryDetailPage() {
         {/* Header Block */}
         <div className="rounded-[11px] border border-[#27382F] bg-[#18201C] p-6 sm:p-7 shadow-subtle space-y-6">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-[#24352C]">
-            <div>
-              <div className="flex items-center gap-3 mb-1.5">
-                <h1 className="text-xl sm:text-2xl font-bold font-mono text-[#F7F6F1] tracking-tight">
+            <div className="space-y-2 min-w-0 max-w-full">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold font-mono text-[#F7F6F1] tracking-tight break-all sm:break-words min-w-0">
                   {repo.fullName}
                 </h1>
-                <EvidenceStrengthBadge strength={repo.evidenceStrength} />
+                <div className="w-fit shrink-0">
+                  <EvidenceStrengthBadge strength={repo.evidenceStrength} />
+                </div>
               </div>
-              <p className="text-xs sm:text-sm text-[#A8B3AC] max-w-2xl">{repo.description}</p>
-              <div className="flex flex-wrap items-center gap-4 mt-2.5 text-xs text-[#7A857E] font-mono">
+              <p className="text-xs sm:text-sm text-[#A8B3AC] max-w-2xl font-sans break-words">{repo.description}</p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5 text-xs text-[#7A857E] font-mono">
                 <span>Ecosystem: <strong className="text-[#F7F6F1]">{repo.primaryLanguage || "Ecosystem"}</strong></span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>Architecture: <strong className="text-[#F7F6F1]">{repo.architectureType || "Modular Architecture"}</strong></span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>Last Activity: {formatDate(repo.lastActivity || repo.createdAt)}</span>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 w-full sm:w-auto">
               <Button
                 variant="emerald"
                 size="md"
                 onClick={() => setIsScannerOpen(true)}
-                className="gap-2 bg-[#087453] hover:bg-[#159A72] text-white"
+                className="gap-2 bg-[#087453] hover:bg-[#159A72] text-white justify-center h-10 col-span-1"
               >
-                <Sparkles className="w-4 h-4" />
-                <span>Run Analysis</span>
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span className="whitespace-nowrap">Run Analysis</span>
               </Button>
 
-              <Link href={`/reports/${repo.id}`}>
-                <Button variant="outline" size="md" className="gap-2 border-[#2E3E34] bg-[#151A17] hover:bg-[#24352C] text-[#F7F6F1]">
-                  <FileDown className="w-4 h-4" />
-                  <span>Export Report</span>
+              <Link href={`/reports/${repo.id}`} className="col-span-1 w-full">
+                <Button
+                  variant="outline"
+                  size="md"
+                  className="w-full gap-2 border-[#2E3E34] bg-[#151A17] hover:bg-[#24352C] text-[#F7F6F1] justify-center h-10"
+                >
+                  <FileDown className="w-4 h-4 shrink-0" />
+                  <span className="whitespace-nowrap">Export Report</span>
                 </Button>
               </Link>
 
-              <Button variant="outline" size="md" onClick={handleShare} className="gap-2 border-[#2E3E34] bg-[#151A17] hover:bg-[#24352C] text-[#F7F6F1]">
-                <Share2 className="w-4 h-4" />
-                <span>{copied ? "Copied" : "Share"}</span>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={handleShare}
+                className="col-span-2 sm:col-span-1 gap-2 border-[#2E3E34] bg-[#151A17] hover:bg-[#24352C] text-[#F7F6F1] justify-center h-10"
+              >
+                <Share2 className="w-4 h-4 shrink-0" />
+                <span className="whitespace-nowrap">{copied ? "Copied" : "Share"}</span>
               </Button>
             </div>
           </div>
 
           {/* Quick Metrics Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-center font-mono">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 text-center font-mono">
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C]">
               <span className="text-[10px] text-[#7A857E] uppercase">Commits</span>
               <div className="text-base font-bold text-[#F7F6F1] mt-0.5">{repo.commitCount}</div>
@@ -190,7 +201,7 @@ export default function RepositoryDetailPage() {
               <div className="text-base font-bold text-[#159A72] mt-0.5">{repo.stars}</div>
             </div>
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C]">
-              <span className="text-[10px] text-[#7A857E] uppercase">Complexity</span>
+              <span className="text-[10px] text-[#7A857E] uppercase">Project Size</span>
               <div className="text-base font-bold text-[#F7F6F1] mt-0.5">{repo.complexity}</div>
             </div>
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C]">
@@ -198,7 +209,7 @@ export default function RepositoryDetailPage() {
               <div className="text-base font-bold text-[#159A72] mt-0.5">{repo.isPrivate ? "Private" : "Public"}</div>
             </div>
             <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C]">
-              <span className="text-[10px] text-[#7A857E] uppercase">Integrity</span>
+              <span className="text-[10px] text-[#7A857E] uppercase">Evidence Strength</span>
               <div className="text-base font-bold text-[#159A72] mt-0.5">{integrityScore} / 100</div>
             </div>
           </div>

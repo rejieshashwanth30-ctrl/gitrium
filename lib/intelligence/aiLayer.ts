@@ -167,10 +167,16 @@ export function synthesizeEvidenceDeterministically(
   const hasFrontend = primaryLangs.some((l) => ["javascript", "html", "css", "react"].includes(l.toLowerCase())) ||
     uniqueTechnologies.some((t) => ["react", "next.js", "tailwind", "vue", "html", "css"].includes(t.toLowerCase()));
 
-  if (hasTypeScript) {
+  if (hasTypeScript && hasFrontend) {
+    strengths.push({
+      title: "Strong Web Development Experience",
+      explanation: "You have worked with TypeScript, JavaScript, HTML, and CSS across multiple projects.",
+      evidenceIds: repositories.filter((r) => r.language?.toLowerCase().includes("typescript")).map((r) => r.id),
+    });
+  } else if (hasTypeScript) {
     strengths.push({
       title: "Strong TypeScript Experience",
-      explanation: "You have used TypeScript repeatedly across several projects, giving Gitrium strong evidence of practical experience.",
+      explanation: "You have used TypeScript repeatedly across several projects.",
       evidenceIds: repositories.filter((r) => r.language?.toLowerCase().includes("typescript")).map((r) => r.id),
     });
   } else if (primaryLangs.length > 0) {
@@ -181,12 +187,12 @@ export function synthesizeEvidenceDeterministically(
     });
   }
 
-  if (hasFrontend) {
+  if (hasFrontend && strengths.length < 2) {
     strengths.push({
       title: "Strong Frontend Experience",
-      explanation: "HTML, CSS, and frontend tools appear repeatedly across your projects, showing consistent UI and client-side development.",
+      explanation: "Frontend tools and UI components appear repeatedly across your projects.",
     });
-  } else if (topSkills.length > 0) {
+  } else if (topSkills.length > 0 && strengths.length < 2) {
     strengths.push({
       title: `Hands-on Experience in ${topSkills[0].name}`,
       explanation: `Used across ${topSkills[0].projectCount} project${topSkills[0].projectCount === 1 ? "" : "s"} with verified code contributions.`,
@@ -197,7 +203,7 @@ export function synthesizeEvidenceDeterministically(
   if (totalCommits > 15) {
     strengths.push({
       title: "Consistent Development Activity",
-      explanation: "Your GitHub history shows regular development activity across your projects.",
+      explanation: "You regularly update your projects and maintain steady development activity.",
     });
   }
 
@@ -207,7 +213,7 @@ export function synthesizeEvidenceDeterministically(
     .slice(0, 3)
     .map((s) => ({
       skill: s.name,
-      explanation: `You are using ${s.name} across ${s.projectCount} project${s.projectCount === 1 ? "" : "s"}, and it appears in your recent work.`,
+      explanation: `Your recent projects show regular use of ${s.name}.`,
       evidenceIds: [s.name],
     }));
 
@@ -215,7 +221,7 @@ export function synthesizeEvidenceDeterministically(
     const growingTech = uniqueTechnologies.find((t) => !hasTypeScript || t.toLowerCase() !== "typescript") || uniqueTechnologies[0];
     emergingSkills.push({
       skill: growingTech,
-      explanation: `You are using ${growingTech} across your projects, and it appears regularly in your recent work.`,
+      explanation: `Your recent projects show regular use of ${growingTech}.`,
     });
   }
 
@@ -224,12 +230,12 @@ export function synthesizeEvidenceDeterministically(
   if (!testingDetected) {
     developmentAreas.push({
       title: "Add Automated Tests",
-      explanation: "Your projects show limited evidence of automated tests. Adding unit or integration tests would make your projects more reliable and strengthen your development profile.",
+      explanation: "Adding tests to your main projects can make your code more reliable.",
     });
   }
   developmentAreas.push({
     title: "Keep Main Projects Active & Documented",
-    explanation: "Adding clear README guides and regular updates will make your projects easier for collaborators and hiring teams to understand.",
+    explanation: "Adding clear README guides and regular updates will make your projects easier to understand.",
   });
 
   // 6. Engineering Patterns
@@ -248,8 +254,8 @@ export function synthesizeEvidenceDeterministically(
   const careerSignals: StructuredAIInsights["careerSignals"] = [];
   if (primaryLangs.some((l) => ["typescript", "javascript", "react", "html", "css"].includes(l.toLowerCase()))) {
     careerSignals.push({
-      role: "Full-Stack Web Development",
-      explanation: "Your current project history shows repeated work across frontend and backend technologies, which aligns well with full-stack development.",
+      role: "Full-Stack Development",
+      explanation: "Your project history includes both frontend and backend development.",
     });
   } else if (primaryLangs.some((l) => ["python", "go", "rust", "java"].includes(l.toLowerCase()))) {
     careerSignals.push({
@@ -266,8 +272,8 @@ export function synthesizeEvidenceDeterministically(
   // 8. Recommended Next Steps
   const recommendedNextSteps: StructuredAIInsights["recommendedNextSteps"] = [
     {
-      title: "Build one project with strong testing",
-      reason: "Add automated tests, document the project clearly, and keep the work visible in GitHub.",
+      title: "Improve One Main Project",
+      reason: "Add automated tests and clear documentation to one of your important projects.",
     },
     {
       title: "Keep Your Main Projects Active",

@@ -42,7 +42,7 @@ export function computeIntegritySignals(params: {
       status: continuityScore >= 80 ? "Optimal" : "Verifiable",
       evidenceText:
         totalCommits > 0
-          ? `Commit cadence shows verified author events (${totalCommits} recorded commits) with natural development cycles across selected repositories.`
+          ? `Shows how regularly you update your projects over time across ${totalCommits} recorded commits.`
           : "Insufficient commit events to establish multi-month cadence.",
       anomalyDetected: false,
       metricLabel: "Commit Continuity",

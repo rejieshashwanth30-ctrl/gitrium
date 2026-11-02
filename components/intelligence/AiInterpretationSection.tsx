@@ -126,8 +126,8 @@ export function AiInterpretationSection({
         </div>
       </div>
 
-      {/* Executive Summary Block */}
-      <div className="p-4 sm:p-5 rounded-[8px] bg-[#151A17] border-l-2 border-[#159A72] border-y border-r border-[#24352C] space-y-2">
+      {/* Executive Summary Block (Desktop & Tablet) */}
+      <div className="hidden md:block p-4 sm:p-5 rounded-[8px] bg-[#151A17] border-l-2 border-[#159A72] border-y border-r border-[#24352C] space-y-2">
         <div className="flex items-center justify-between text-[11px] font-mono text-[#7A857E]">
           <span className="uppercase tracking-wider font-bold text-[#159A72]">
             Gitrium studied your GitHub activity. Here&apos;s what stands out:
@@ -139,8 +139,93 @@ export function AiInterpretationSection({
         </p>
       </div>
 
-      {/* Primary 3-Column Structured Interpretations */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* MOBILE COMPACT STREAMLINED VIEW (< 768px) */}
+      <div className="block md:hidden space-y-4 font-mono">
+        <p className="text-xs text-[#159A72] font-semibold uppercase tracking-wider">
+          Here&apos;s what Gitrium found in your work:
+        </p>
+
+        {/* 1. Your Strength */}
+        {strengths.length > 0 && (
+          <div className="p-3.5 rounded-[8px] bg-[#151A17] border border-[#24352C] space-y-1">
+            <div className="flex items-center gap-1.5 text-[#159A72] text-[11px] font-bold uppercase">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#159A72] shrink-0" />
+              <span>Your Strength</span>
+            </div>
+            <p className="text-xs font-bold text-[#F7F6F1]">{strengths[0].title}</p>
+            <p className="text-[11px] text-[#A8B3AC] font-sans leading-relaxed">
+              {strengths[0].explanation}
+            </p>
+          </div>
+        )}
+
+        {/* 2. Growing Skill */}
+        {emergingSkills.length > 0 && (
+          <div className="p-3.5 rounded-[8px] bg-[#151A17] border border-[#24352C] space-y-1">
+            <div className="flex items-center gap-1.5 text-[#D97745] text-[11px] font-bold uppercase">
+              <TrendingUp className="w-3.5 h-3.5 text-[#D97745] shrink-0" />
+              <span>Growing Skill</span>
+            </div>
+            <p className="text-xs font-bold text-[#F7F6F1]">{emergingSkills[0].skill}</p>
+            <p className="text-[11px] text-[#A8B3AC] font-sans leading-relaxed">
+              {emergingSkills[0].explanation}
+            </p>
+          </div>
+        )}
+
+        {/* 3. Career Direction */}
+        {careerSignals.length > 0 && (
+          <div className="p-3.5 rounded-[8px] bg-[#151A17] border border-[#24352C] space-y-1">
+            <div className="flex items-center gap-1.5 text-[#159A72] text-[11px] font-bold uppercase">
+              <Compass className="w-3.5 h-3.5 text-[#159A72] shrink-0" />
+              <span>Career Direction</span>
+            </div>
+            <p className="text-xs font-bold text-[#F7F6F1]">{careerSignals[0].role}</p>
+            <p className="text-[11px] text-[#A8B3AC] font-sans leading-relaxed">
+              {careerSignals[0].explanation}
+            </p>
+          </div>
+        )}
+
+        {/* 4. Next Step */}
+        {recommendedNextSteps.length > 0 && (
+          <div className="p-3.5 rounded-[8px] bg-[#151A17] border border-[#24352C] space-y-1">
+            <div className="flex items-center gap-1.5 text-[#D97745] text-[11px] font-bold uppercase">
+              <Lightbulb className="w-3.5 h-3.5 text-[#D97745] shrink-0" />
+              <span>Next Step</span>
+            </div>
+            <p className="text-xs font-bold text-[#F7F6F1]">{recommendedNextSteps[0].title}</p>
+            <p className="text-[11px] text-[#A8B3AC] font-sans leading-relaxed">
+              {recommendedNextSteps[0].reason}
+            </p>
+          </div>
+        )}
+
+        {/* Mobile Expandable "Why this insight?" */}
+        <details className="group pt-2 border-t border-[#24352C] text-xs">
+          <summary className="cursor-pointer text-[#159A72] hover:text-[#2dd4bf] text-[11px] font-medium py-1 select-none flex items-center justify-between">
+            <span>Why this insight? View full summary</span>
+            <span className="text-[#7A857E] group-open:rotate-180 transition-transform">▾</span>
+          </summary>
+          <div className="pt-2 pb-1 space-y-2.5 text-[11px] text-[#A8B3AC] font-sans leading-relaxed">
+            <p>{summary}</p>
+            {developmentAreas.length > 0 && (
+              <div className="p-2.5 rounded bg-[#151A17] border border-[#24352C] space-y-0.5">
+                <span className="text-[10px] uppercase font-mono text-[#D97745] font-bold block">
+                  What you could improve:
+                </span>
+                <span className="font-mono text-xs text-[#F7F6F1] font-semibold block">
+                  {developmentAreas[0].title}
+                </span>
+                <span>{developmentAreas[0].explanation}</span>
+              </div>
+            )}
+          </div>
+        </details>
+      </div>
+
+      {/* DESKTOP 3-COLUMN STRUCTURED INTERPRETATIONS (>= 768px) */}
+      <div className="hidden md:grid md:grid-cols-3 gap-4">
         {/* Card 1: Your Strengths */}
         <div className="p-4 rounded-[8px] bg-[#151A17] border border-[#24352C] space-y-3">
           <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#159A72] uppercase tracking-wider">

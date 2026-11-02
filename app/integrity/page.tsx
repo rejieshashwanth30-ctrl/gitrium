@@ -73,49 +73,72 @@ export default function IntegrityPage() {
         <IntegrityScoreGauge score={overallScore} />
 
         {/* Ethical Analytical Disclaimer */}
-        <div className="p-4 rounded-[11px] border border-[#27382F] bg-[#18201C] shadow-subtle flex items-start gap-3">
-          <Info className="w-5 h-5 text-[#159A72] mt-0.5 flex-shrink-0" />
-          <div className="space-y-1">
+        <div className="p-3.5 sm:p-4 rounded-[11px] border border-[#27382F] bg-[#18201C] shadow-subtle flex items-start gap-3">
+          <Info className="w-4 h-4 text-[#159A72] mt-0.5 shrink-0" />
+          <div className="space-y-0.5 min-w-0">
             <h4 className="text-xs font-bold text-[#F7F6F1] uppercase font-mono tracking-wider">
-              How Gitrium Evaluates Consistency &amp; Ethical Safeguards
+              Consistency &amp; Ethical Safeguards
             </h4>
             <p className="text-xs text-[#A8B3AC] leading-relaxed font-sans">
-              Gitrium does not claim to prove that code is 100% human-written.
-              Modern development naturally includes AI tools, libraries, and boilerplates.
-              Our indicators simply provide helpful context about steady project activity and consistent contributions.
+              Gitrium does not claim code is 100% human-written. Modern development includes AI tools and libraries. Indicators show steady project activity and consistent commits.
             </p>
           </div>
         </div>
 
         {/* AI Interpretation: Cadence & Continuity */}
         {aiInsights && (
-          <div className="p-5 rounded-[11px] border border-[#27382F] bg-[#18201C] shadow-subtle space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="p-4 sm:p-5 rounded-[11px] border border-[#27382F] bg-[#18201C] shadow-subtle space-y-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4">
               <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#159A72] uppercase tracking-wider">
-                <Sparkles className="w-4 h-4 text-[#159A72]" />
+                <Sparkles className="w-3.5 h-3.5 text-[#159A72] shrink-0" />
                 <span>AI Insights: Development Consistency</span>
               </div>
               <span className="text-[10px] font-mono text-[#7A857E]">
                 Based on {aiInsights.evidenceBasis.repositoriesCount} projects · {aiInsights.evidenceBasis.commitsCount} commits
               </span>
             </div>
-            <p className="text-xs text-[#F7F6F1] font-sans leading-relaxed">
-              Your GitHub activity reflects regular, incremental development work across your projects without artificial activity bursts. Contributions match your profile with steady code updates over time.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#24352C] text-xs font-mono">
+
+            <div>
+              <p className="text-xs sm:text-sm font-semibold text-[#F7F6F1]">
+                Consistent Development Activity
+              </p>
+              <p className="text-xs text-[#A8B3AC] font-sans mt-0.5 leading-relaxed">
+                Your GitHub history shows regular updates across your projects without artificial activity bursts.
+              </p>
+            </div>
+
+            {/* Quick Signals */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-[#24352C] text-xs font-mono">
               <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C] space-y-1">
                 <span className="text-[#159A72] font-bold block">Development Rhythm:</span>
-                <span className="text-[#A8B3AC] text-[11px] font-sans">
+                <span className="text-[#A8B3AC] text-[11px] font-sans block">
                   Commit distribution shows steady progress rather than sudden one-time file additions.
                 </span>
               </div>
               <div className="p-3 rounded-[6px] bg-[#151A17] border border-[#24352C] space-y-1">
                 <span className="text-[#159A72] font-bold block">Account Consistency:</span>
-                <span className="text-[#A8B3AC] text-[11px] font-sans">
+                <span className="text-[#A8B3AC] text-[11px] font-sans block">
                   Project updates and author details match your connected GitHub account.
                 </span>
               </div>
             </div>
+
+            {/* Expandable Evidence Details */}
+            <details className="group pt-1 border-t border-[#24352C]/60 text-xs font-mono">
+              <summary className="cursor-pointer text-[#159A72] hover:text-[#2dd4bf] text-[11px] font-medium py-1 select-none flex items-center justify-between">
+                <span>Why this insight? View evidence details</span>
+                <span className="text-[#7A857E] group-open:rotate-180 transition-transform">▾</span>
+              </summary>
+              <div className="pt-2 pb-1 space-y-2 text-[11px] text-[#A8B3AC] font-sans leading-relaxed">
+                <p>
+                  Gitrium reviewed recorded commits, timing, author signatures, and contribution distribution across {aiInsights.evidenceBasis.repositoriesCount} repositories and {aiInsights.evidenceBasis.commitsCount} commits over time.
+                </p>
+                <div className="p-2 rounded bg-[#151A17] border border-[#24352C] text-[#7A857E] font-mono text-[10px]">
+                  <span>Evidence Traceability Key: </span>
+                  <span className="text-[#159A72]">{aiInsights.evidenceTraceabilityKey ? aiInsights.evidenceTraceabilityKey.slice(0, 16) : "VERIFIED_HISTORY"}...</span>
+                </div>
+              </div>
+            </details>
           </div>
         )}
 
