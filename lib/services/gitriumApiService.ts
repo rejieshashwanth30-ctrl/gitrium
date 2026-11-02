@@ -6,6 +6,7 @@ import {
   IntegritySignal,
   AnalysisReport,
   CareerMatch,
+  EvidenceStrength,
 } from "@/types";
 import { StructuredAIInsights } from "@/lib/intelligence/aiLayer";
 
@@ -505,15 +506,19 @@ class ProductionGitriumApiService implements IGitriumService {
               const fullData = r.fullData || {};
               const repo = r.repository;
 
+              const commitsCount = fullData.totalCommits || (repo ? repo.commitCount : 0);
+              const computedScore = fullData.overallEvidenceScore || fullData.overallScore || (commitsCount > 30 ? 94 : commitsCount > 10 ? 88 : 78);
+              const computedStrength: EvidenceStrength = computedScore >= 90 ? "Strong Evidence" : computedScore >= 75 ? "Moderate Evidence" : "Limited Evidence";
+
               return {
                 id: r.id,
                 repositoryId: r.repositoryId || (repo ? repo.id : "all_repos"),
                 repositoryName: repo ? repo.name : (fullData.repositoryScope?.[0]?.name || "Aggregated Workspace"),
                 owner: repo ? repo.owner || "Developer" : "Developer",
                 generatedAt: r.createdAt || new Date().toISOString(),
-                overallEvidenceScore: 92,
-                overallIntegrityScore: 92,
-                evidenceStrength: "Strong Evidence" as const,
+                overallEvidenceScore: computedScore,
+                overallIntegrityScore: computedScore,
+                evidenceStrength: computedStrength,
                 summary: r.summary || fullData.ai?.engineeringSummary || "",
                 primaryArchetype: "Full-Stack Systems Engineer",
                 totalCommitsAnalyzed: fullData.totalCommits || (repo ? repo.commitCount : 0),

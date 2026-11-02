@@ -9,6 +9,7 @@
     "db:migrate": "prisma migrate deploy",
     "start": "next start",
     "lint": "next lint",
+    "test": "node scripts/run_ai_accuracy_evaluation.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {

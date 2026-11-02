@@ -268,7 +268,7 @@ export default function DashboardPage() {
       setSyncFeedback(result.message);
       await fetchLiveDashboard();
     } catch {
-      setSyncFeedback("Sync encounter an error. Please verify network and GitHub OAuth connection.");
+      setSyncFeedback("Sync encountered an error. Please verify network and GitHub OAuth connection.");
     } finally {
       setIsSyncing(false);
     }
