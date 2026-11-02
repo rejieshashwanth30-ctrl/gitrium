@@ -16,6 +16,8 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   const { searchParams, origin } = new URL(request.url);
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type");
   const code = searchParams.get("code");
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
@@ -24,7 +26,32 @@ export async function GET(request: Request) {
   const rawNext = searchParams.get("next") ?? "/select-repositories";
   const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/select-repositories";
 
-  // 1. Handle cancelled authorization or OAuth error from provider
+  // 1. Handle token_hash / OTP confirmation links (direct email signup confirmations)
+  if (tokenHash && type) {
+    try {
+      console.log(`[AUTH_CALLBACK] [${requestId}] Verifying email OTP token_hash (type: ${type})...`);
+      const supabase = createClient();
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: type as any,
+      });
+
+      if (!verifyError && data.user) {
+        console.log(`[AUTH_CALLBACK] [${requestId}] Email OTP verified for user ${data.user.id}`);
+        await ensureUserProfile(data.user);
+        return NextResponse.redirect(`${origin}/github-connect?confirmed=true&email_verified=true`);
+      }
+
+      console.error(`[AUTH_CALLBACK] [${requestId}] verifyOtp error:`, verifyError?.message);
+      const desc = encodeURIComponent(verifyError?.message || "Invalid or expired confirmation link");
+      return NextResponse.redirect(`${origin}/login?error=CONFIRMATION_LINK_INVALID&error_description=${desc}`);
+    } catch (otpErr: any) {
+      console.error(`[AUTH_CALLBACK] [${requestId}] verifyOtp exception:`, otpErr);
+      return NextResponse.redirect(`${origin}/login?error=CONFIRMATION_FAILED`);
+    }
+  }
+
+  // 2. Handle cancelled authorization or OAuth error from provider
   if (error) {
     console.warn(`[GITHUB_OAUTH] [${requestId}] Provider error: ${error} - ${errorDescription}`);
     const errorCode = error === "access_denied" ? "access_denied" : "OAUTH_PROVIDER_ERROR";
@@ -143,20 +170,25 @@ export async function GET(request: Request) {
         }
       } else {
         // Provider token was not attached in this session exchange.
-        // Check if an existing connected valid account exists for this profile
+        // This occurs when:
+        // A) The user clicked an EMAIL SIGNUP CONFIRMATION link (e.g. from their confirmation email)
+        // B) The user signed in via magic link or password recovery
+        // C) The user is re-establishing their Supabase session
+        console.log(`[AUTH_CALLBACK] [${requestId}] No provider_token in session exchange. Verifying session state for user ${profile.id}...`);
+
+        // Check if an existing connected valid GitHub account exists for this profile
         const existingAccount = await prisma.gitHubAccount.findUnique({
           where: { userId: profile.id },
         });
 
         if (existingAccount?.accessToken && existingAccount.connectionStatus === "connected") {
-          console.log(`[GITHUB_OAUTH] [${requestId}] Existing active connected GitHub account confirmed. Redirecting.`);
+          console.log(`[AUTH_CALLBACK] [${requestId}] Existing active connected GitHub account confirmed. Redirecting to ${next}`);
           return NextResponse.redirect(`${origin}${next}`);
         }
 
-        console.warn(`[GITHUB_OAUTH] [${requestId}] No provider_token received from Supabase OAuth exchange.`);
-        return NextResponse.redirect(
-          `${origin}/github-connect?error=GITHUB_TOKEN_MISSING&error_description=No+GitHub+access+token+returned+by+OAuth+session.+Please+re-authorize+with+repo+and+user+permissions.&request_id=${requestId}`
-        );
+        // Email confirmed / session verified: redirect to GitHub connect step cleanly
+        console.log(`[AUTH_CALLBACK] [${requestId}] Email session verified for ${profile.email}. Redirecting to github-connect.`);
+        return NextResponse.redirect(`${origin}/github-connect?confirmed=true&email_verified=true`);
       }
     } catch (err: any) {
       console.error(`[GITHUB_OAUTH] [${requestId}] Unexpected error during callback processing:`, {

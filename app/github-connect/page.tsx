@@ -12,6 +12,9 @@ import {
   ArrowRight,
   Eye,
   AlertCircle,
+  CheckCircle2,
+  ExternalLink,
+  Info,
 } from "lucide-react";
 import { initiateGitHubConnect } from "@/lib/auth/githubAuthClient";
 
@@ -76,6 +79,7 @@ function GitHubConnectContent() {
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
   const errorDescParam = searchParams.get("error_description");
+  const isEmailConfirmed = searchParams.get("confirmed") === "true" || searchParams.get("email_verified") === "true";
   const errorMessage = getSafeErrorMessage(errorParam, errorDescParam);
 
   const handleConnect = async () => {
@@ -108,6 +112,14 @@ function GitHubConnectContent() {
             <span className="text-[#7A857E]">NEXT: REPOSITORY SELECTION</span>
           </div>
 
+          {/* Email Confirmation Success Banner */}
+          {isEmailConfirmed && (
+            <div className="p-3.5 rounded-[7px] bg-[#DDF4EA] border border-[#159A72]/30 text-[#087453] text-xs flex items-center gap-2 font-mono">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[#159A72]" />
+              <span>Email confirmed successfully! Next: authorize your GitHub account to start syncing code evidence.</span>
+            </div>
+          )}
+
           {errorMessage && (
             <div className="p-3.5 rounded-[7px] bg-[#FAF0ED] border border-[#F3E3D8] text-[#D97745] text-xs flex items-center gap-2 font-mono">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -137,6 +149,39 @@ function GitHubConnectContent() {
               <span>{isConnecting ? "Connecting to GitHub..." : "Connect GitHub Account"}</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
+          </div>
+
+          {/* GitHub OAuth Screen Transparency Callout */}
+          <div className="p-4 rounded-[8px] bg-[#F7F6F1] border border-[#DDE1DC] space-y-2.5 font-sans text-xs text-[#56635C]">
+            <div className="flex items-center gap-2 font-mono text-[11px] font-bold text-[#17201B] uppercase tracking-wider">
+              <Info className="w-4 h-4 text-[#159A72]" />
+              <span>Understanding GitHub&apos;s Authorization Screen</span>
+            </div>
+            <p className="text-[11px] leading-relaxed">
+              When you click Connect, GitHub displays standard OAuth application details:
+            </p>
+            <div className="p-3 rounded-[6px] bg-white border border-[#DDE1DC] space-y-1.5 font-mono text-[11px]">
+              <div>
+                <span className="text-[#159A72] font-bold mr-1.5">•</span>
+                <strong className="text-[#17201B]">&quot;ADYK Gitrium by rejieshashwanth30-ctrl&quot;</strong>: Identifies the registered application publisher.
+              </div>
+              <div>
+                <span className="text-[#159A72] font-bold mr-1.5">•</span>
+                <strong className="text-[#17201B]">&quot;wants to access your [your_account]&quot;</strong>: Confirms YOUR GitHub account granting permission.
+              </div>
+            </div>
+            <div className="pt-1 flex items-center justify-between text-[11px] text-[#7A857E]">
+              <span>Using a different GitHub account?</span>
+              <a
+                href="https://github.com/login"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#159A72] hover:text-[#087453] hover:underline flex items-center gap-1 font-mono font-medium"
+              >
+                <span>Switch account on GitHub</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
           </div>
 
           {/* Permission Breakdown */}

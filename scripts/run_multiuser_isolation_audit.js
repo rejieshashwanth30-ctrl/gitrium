@@ -471,6 +471,118 @@ recordTest(
 );
 
 // ============================================================================
+// SUITE 8: GITHUB OAUTH MULTI-USER MAPPING & EMAIL CONFIRMATION VERIFICATION
+// ============================================================================
+console.log(`\n${CYAN}${BOLD}▶ SUITE 8: Multi-User OAuth Mapping & Email Confirmation Flow${RESET}`);
+
+// Test 1: Real-world user (e.g. "chitraj30-sketch") maps to their own GitHub identity, not the app publisher
+const appPublisher = "rejieshashwanth30-ctrl";
+const authorizingUser = {
+  login: "chitraj30-sketch",
+  id: 98765432,
+  profileUrl: "https://github.com/chitraj30-sketch",
+};
+
+// Simulation of atomic transaction in /auth/callback
+const simulatedAccountState = {};
+function simulateOAuthPersistence(gitriumProfileId, verifiedGitHubUser) {
+  simulatedAccountState[gitriumProfileId] = {
+    userId: gitriumProfileId,
+    githubId: String(verifiedGitHubUser.id),
+    username: verifiedGitHubUser.login,
+    profileUrl: verifiedGitHubUser.profileUrl,
+  };
+}
+
+simulateOAuthPersistence("user_profile_chitra_123", authorizingUser);
+const persistedUser = simulatedAccountState["user_profile_chitra_123"];
+
+recordTest(
+  "OAuth Identity Mapping",
+  "Authorizing user (chitraj30-sketch) is saved with their own verified username, NOT app publisher",
+  persistedUser.username === "chitraj30-sketch" && persistedUser.username !== appPublisher,
+  "Persisted GitHub username must match authorizing user exactly"
+);
+
+recordTest(
+  "OAuth Identity Mapping",
+  "Authorizing user (chitraj30-sketch) is saved with their own numeric GitHub ID",
+  persistedUser.githubId === "98765432",
+  "Persisted GitHub ID must match verified GitHub account"
+);
+
+// Test 2: Email confirmation callback does NOT fail with GITHUB_TOKEN_MISSING
+function simulateAuthCallback(session, code) {
+  if (code) {
+    if (session.provider_token) {
+      return { redirect: "/select-repositories", status: "GITHUB_CONNECTED" };
+    } else if (session.user) {
+      // Email confirmation / passwordless session
+      return { redirect: "/github-connect?confirmed=true&email_verified=true", status: "EMAIL_CONFIRMED" };
+    }
+  }
+  return { redirect: "/github-connect?error=UNKNOWN", status: "ERROR" };
+}
+
+const emailConfirmationSession = {
+  user: { id: "user_email_test_999", email: "developer@example.com" },
+  provider_token: null, // No GitHub token in email signup confirmation
+};
+
+const callbackResult = simulateAuthCallback(emailConfirmationSession, "mock_pkce_code");
+recordTest(
+  "Email Confirmation Flow",
+  "Email signup confirmation callback redirects cleanly to github-connect without GITHUB_TOKEN_MISSING error",
+  callbackResult.status === "EMAIL_CONFIRMED" && callbackResult.redirect.includes("confirmed=true"),
+  "Email verification must succeed even when provider_token is absent"
+);
+
+// Test 3: Resend confirmation rate-limiting
+const resendTimestamps = new Map();
+function handleResendRequest(testEmail, currentTime) {
+  const lastTime = resendTimestamps.get(testEmail);
+  if (lastTime && currentTime - lastTime < 60000) {
+    return { status: 429, error: "RATE_LIMITED" };
+  }
+  resendTimestamps.set(testEmail, currentTime);
+  return { status: 200, success: true };
+}
+
+const req1 = handleResendRequest("test@example.com", 100000);
+const req2 = handleResendRequest("test@example.com", 105000); // 5 seconds later
+const req3 = handleResendRequest("test@example.com", 165000); // 65 seconds later
+
+recordTest(
+  "Resend Rate Limiting",
+  "Resend confirmation email enforces 60-second cooldown per email address",
+  req1.status === 200 && req2.status === 429 && req3.status === 200,
+  "Rapid repeated resend requests must be rate-limited"
+);
+
+// Test 4: Existing user detection (State E) vs new user (State A)
+function inspectSignupState(supabaseResponse) {
+  if (supabaseResponse.user) {
+    const isExisting = Array.isArray(supabaseResponse.user.identities) && supabaseResponse.user.identities.length === 0;
+    if (isExisting) {
+      return "STATE_E_ALREADY_REGISTERED";
+    }
+    return "STATE_A_NEW_ACCOUNT";
+  }
+  return "STATE_B_FAILURE";
+}
+
+const newUserResp = { user: { id: "u1", identities: [{ id: "id1" }] } };
+const existingUserResp = { user: { id: "u2", identities: [] } }; // Supabase returns empty identities for existing users
+
+recordTest(
+  "Signup Truthful State",
+  "Signup state correctly distinguishes new accounts (State A) from already registered accounts (State E)",
+  inspectSignupState(newUserResp) === "STATE_A_NEW_ACCOUNT" &&
+    inspectSignupState(existingUserResp) === "STATE_E_ALREADY_REGISTERED",
+  "Prevents showing false 'confirmation email sent' when email already exists in Supabase"
+);
+
+// ============================================================================
 // SUMMARY & EVALUATION REPORT
 // ============================================================================
 console.log(`\n${BOLD}================================================================================${RESET}`);

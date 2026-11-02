@@ -62,10 +62,20 @@ export default function SignupPage() {
         router.push("/github-connect");
         router.refresh();
       } else if (data.user) {
-        // Confirmation email sent
-        setSuccessMessage(
-          "Confirmation link dispatched to your email. Check your inbox to activate your vault."
-        );
+        // Truthful confirmation state inspection
+        const isExistingUser = Array.isArray(data.user.identities) && data.user.identities.length === 0;
+
+        if (isExistingUser) {
+          // State E: Account with this email already exists
+          setError(
+            "An account with this email may already exist. If your email is unconfirmed, please request a new confirmation email or sign in."
+          );
+        } else {
+          // State A: New account created, confirmation link requested
+          setSuccessMessage(
+            "Your account has been created. A confirmation link has been requested for your email. Please check your inbox and spam folder to activate your vault."
+          );
+        }
         setIsLoading(false);
       }
     } catch (err: unknown) {
@@ -90,29 +100,50 @@ export default function SignupPage() {
       <div className="mt-7 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white border border-[#DDE1DC] py-8 px-6 sm:px-8 rounded-[11px] shadow-[0_2px_8px_rgba(21,26,23,0.04)]">
           {error && (
-            <div className="mb-5 p-3 rounded-[7px] bg-[#FAF0ED] border border-[#F3E3D8] text-[#D97745] text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
+            <div className="mb-5 p-3.5 rounded-[7px] bg-[#FAF0ED] border border-[#F3E3D8] text-[#D97745] text-xs space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{error}</span>
+              </div>
+              <div className="pt-1 flex items-center justify-between text-[11px] border-t border-[#F3E3D8]/60">
+                <span>Didn&apos;t receive email?</span>
+                <Link href="/resend-confirmation" className="font-semibold underline hover:text-[#B85C2B]">
+                  Resend confirmation
+                </Link>
+              </div>
             </div>
           )}
 
           {successMessage && (
-            <div className="mb-5 p-3 rounded-[7px] bg-[#DDF4EA] border border-[#159A72]/30 text-[#087453] text-xs flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[#159A72]" />
-              <span>{successMessage}</span>
+            <div className="mb-5 p-3.5 rounded-[7px] bg-[#DDF4EA] border border-[#159A72]/30 text-[#087453] text-xs space-y-2">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[#159A72] mt-0.5" />
+                <span className="leading-relaxed">{successMessage}</span>
+              </div>
+              <div className="pt-1 flex items-center justify-between text-[11px] border-t border-[#159A72]/20">
+                <span>Email not arriving?</span>
+                <Link href="/resend-confirmation" className="font-semibold underline hover:text-[#065A40]">
+                  Resend confirmation
+                </Link>
+              </div>
             </div>
           )}
 
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={handleGitHubAuth}
-            disabled={isLoading}
-            className="w-full justify-center gap-2.5 font-medium bg-[#151A17] hover:bg-[#24352C] text-white border border-[#24352C]"
-          >
-            <Github className="w-4 h-4 text-[#159A72]" />
-            <span>Sign up with GitHub</span>
-          </Button>
+          <div className="space-y-1.5 mb-2">
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleGitHubAuth}
+              disabled={isLoading}
+              className="w-full justify-center gap-2.5 font-medium bg-[#151A17] hover:bg-[#24352C] text-white border border-[#24352C]"
+            >
+              <Github className="w-4 h-4 text-[#159A72]" />
+              <span>Sign up with GitHub</span>
+            </Button>
+            <p className="text-[10px] text-center text-[#7A857E] font-sans">
+              Connects your active browser GitHub account. Instant verification.
+            </p>
+          </div>
 
           <div className="mt-6 relative">
             <div className="absolute inset-0 flex items-center">
