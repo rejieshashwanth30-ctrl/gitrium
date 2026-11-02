@@ -144,7 +144,7 @@ export function Navbar() {
               variant="full"
               size="sm"
               textColor="light"
-              className="w-auto max-w-[135px] sm:max-w-[160px] lg:max-w-[170px]"
+              className="w-auto"
             />
           </div>
 

@@ -101,11 +101,13 @@ export function GitriumLogo({
         <div className="flex flex-col">
           <div className="flex items-center gap-2.5">
             <GitriumMarkSvg className={markSize[size]} />
-            <div className="flex flex-col leading-none">
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#159A72] font-mono">ADYK</span>
+            <div className="flex flex-col justify-center">
+              <span className="text-[8px] sm:text-[9px] font-bold tracking-[0.18em] uppercase text-[#159A72] font-mono leading-tight mb-0.5 select-none">
+                ADYK
+              </span>
               <span
                 className={cn(
-                  "font-bold tracking-tight text-lg",
+                  "font-extrabold tracking-tight text-base sm:text-lg font-sans leading-tight select-none",
                   textColor === "dark" ? "text-[#17201B]" : "text-[#F7F6F1]"
                 )}
               >
@@ -115,7 +117,7 @@ export function GitriumLogo({
           </div>
           <span
             className={cn(
-              "mt-0.5 text-[8.5px] tracking-wider uppercase font-semibold font-mono hidden sm:block whitespace-nowrap",
+              "mt-1 text-[8px] tracking-wider uppercase font-semibold font-mono hidden sm:block whitespace-nowrap select-none",
               textColor === "dark" ? "text-[#56635C]" : "text-[#7A857E]"
             )}
           >
@@ -125,11 +127,13 @@ export function GitriumLogo({
       ) : (
         <div className="flex items-center gap-2.5">
           <GitriumMarkSvg className={markSize[size]} />
-          <div className="flex flex-col leading-none">
-            <span className="text-[8.5px] font-bold tracking-widest uppercase text-[#159A72] font-mono">ADYK</span>
+          <div className="flex flex-col justify-center">
+            <span className="text-[8px] sm:text-[8.5px] font-bold tracking-[0.18em] uppercase text-[#159A72] font-mono leading-tight mb-0.5 select-none">
+              ADYK
+            </span>
             <span
               className={cn(
-                "font-bold tracking-tight text-lg",
+                "font-extrabold tracking-tight text-base sm:text-lg font-sans leading-tight select-none",
                 textColor === "dark" ? "text-[#17201B]" : "text-[#F7F6F1]"
               )}
             >

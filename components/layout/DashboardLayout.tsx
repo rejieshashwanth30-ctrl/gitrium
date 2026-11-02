@@ -145,16 +145,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </Link>
 
           <button
-            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+            onClick={() => setMobileSidebarOpen(true)}
             className="min-w-[44px] min-h-[44px] rounded-[7px] flex items-center justify-center text-[#A8B3AC] hover:text-[#F7F6F1] hover:bg-[#1E2822] active:bg-[#24352C] transition-colors focus:outline-none"
-            aria-label="Toggle Navigation Drawer"
+            aria-label="Open Navigation Drawer"
             aria-expanded={mobileSidebarOpen}
           >
-            {mobileSidebarOpen ? (
-              <X className="w-5 h-5 text-[#F7F6F1]" />
-            ) : (
-              <Menu className="w-5 h-5 text-[#F7F6F1]" />
-            )}
+            <Menu className="w-5 h-5 text-[#F7F6F1]" />
           </button>
         </div>
       </header>
@@ -162,7 +158,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* MOBILE BACKDROP OVERLAY */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-200"
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 md:hidden transition-opacity duration-200"
           onClick={() => setMobileSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -173,7 +169,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* ==================================================================== */}
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-50 md:z-30 w-72 max-w-[85vw] md:w-64 h-screen border-r border-[#24352C] bg-[#151A17] text-[#A8B3AC] flex flex-col justify-between transition-transform duration-200 ease-in-out shadow-2xl md:shadow-none",
+          "fixed top-0 bottom-0 left-0 z-50 md:z-30 w-72 max-w-[82vw] md:w-64 h-screen border-r border-[#24352C] bg-[#151A17] text-[#A8B3AC] flex flex-col justify-between transition-transform duration-200 ease-in-out shadow-2xl md:shadow-none",
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
@@ -187,8 +183,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           />
           <button
             onClick={() => setMobileSidebarOpen(false)}
-            className="md:hidden p-1.5 rounded-[6px] text-[#A8B3AC] hover:text-white hover:bg-[#1E2822] transition-colors"
-            aria-label="Close sidebar"
+            className="md:hidden min-w-[36px] min-h-[36px] rounded-[7px] flex items-center justify-center text-[#A8B3AC] hover:text-white hover:bg-[#1E2822] active:bg-[#24352C] transition-colors"
+            aria-label="Close navigation drawer"
           >
             <X className="w-5 h-5" />
           </button>

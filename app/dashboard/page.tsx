@@ -305,9 +305,9 @@ export default function DashboardPage() {
           developerName={developerName}
           githubConnected={githubConnected}
           totalContributions={totalContributions}
-          repositoriesCount={repositories.length}
+          repositoriesCount={repositoriesCount}
           technologiesCount={technologiesCount}
-          skillsCount={skills.length}
+          skillsCount={skillsCount}
           evidenceSignalsCount={evidenceSignalsCount}
           isSyncing={isSyncing}
           onSync={handleTriggerSync}

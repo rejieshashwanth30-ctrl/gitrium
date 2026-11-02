@@ -137,7 +137,7 @@ export default function RepositoryDetailPage() {
                 <h1 className="text-xl sm:text-2xl font-bold font-mono text-[#F7F6F1] tracking-tight break-all sm:break-words min-w-0">
                   {repo.fullName}
                 </h1>
-                <div className="w-fit shrink-0">
+                <div className="w-fit shrink-0 self-start sm:self-center">
                   <EvidenceStrengthBadge strength={repo.evidenceStrength} />
                 </div>
               </div>

@@ -61,7 +61,7 @@ function getSafeErrorMessage(error: string | null, description: string | null): 
     case "DATABASE_AUTH_FAILED":
       return "Database authentication failed. Please verify database credentials.";
     case "DATABASE_SCHEMA_MISSING":
-      return "Gitrium database schema is not ready. Please apply database migrations.";
+      return "Gitrium database is temporarily syncing schema. Please try connecting again in a moment.";
     case "GITHUB_ACCOUNT_ALREADY_LINKED":
       return "This GitHub account is already connected to another Gitrium user profile.";
     case "access_denied":
@@ -121,9 +121,17 @@ function GitHubConnectContent() {
           )}
 
           {errorMessage && (
-            <div className="p-3.5 rounded-[7px] bg-[#FAF0ED] border border-[#F3E3D8] text-[#D97745] text-xs flex items-center gap-2 font-mono">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{errorMessage}</span>
+            <div className="p-3.5 rounded-[7px] bg-[#FAF0ED] border border-[#F3E3D8] text-[#D97745] text-xs flex items-center justify-between gap-2 font-mono">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+              <Link
+                href="/github-connect"
+                className="text-xs text-[#D97745] hover:text-[#b85b2e] underline shrink-0 font-sans"
+              >
+                Dismiss
+              </Link>
             </div>
           )}
 
