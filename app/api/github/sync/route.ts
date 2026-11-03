@@ -24,10 +24,23 @@ export async function GET() {
     }
 
     const { prisma } = await import("@/lib/db/prisma");
-    const latestRun = await prisma.syncRun.findFirst({
+    let latestRun = await prisma.syncRun.findFirst({
       where: { userId: profile.id },
       orderBy: { startedAt: "desc" },
     });
+
+    // Auto-heal abandoned SYNCING run (> 3 minutes old)
+    if (latestRun && latestRun.status === "SYNCING" && Date.now() - new Date(latestRun.startedAt).getTime() > 180_000) {
+      latestRun = await prisma.syncRun.update({
+        where: { id: latestRun.id },
+        data: {
+          status: "FAILED",
+          completedAt: new Date(),
+          errorCode: "SYNC_TIMEOUT",
+          errorMessageSafe: "Synchronization timed out or was interrupted. Please retry.",
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

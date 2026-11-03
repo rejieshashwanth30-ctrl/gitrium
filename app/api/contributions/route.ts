@@ -27,8 +27,8 @@ export async function GET() {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    // Fetch user's selected repositories with their commits
-    const repositories = await prisma.repository.findMany({
+    // Fetch user's selected repositories with their commits (fallback to all user repositories)
+    let repositories = await prisma.repository.findMany({
       where: {
         userId: profile.id,
         isSelected: true,
@@ -46,6 +46,26 @@ export async function GET() {
         },
       },
     });
+
+    if (repositories.length === 0) {
+      repositories = await prisma.repository.findMany({
+        where: {
+          userId: profile.id,
+        },
+        include: {
+          commits: {
+            select: {
+              authorDate: true,
+            },
+          },
+          pullRequests: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
+    }
 
     // Aggregate commits by date string (YYYY-MM-DD)
     const commitDateMap: Record<string, number> = {};

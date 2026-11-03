@@ -81,7 +81,7 @@ function DashboardHeaderAndTelemetry({
               </Link>
             )}
             <span className="text-[11px] text-[#7A857E] font-mono">
-              • {repositoriesCount > 0 ? `${repositoriesCount} projects connected` : "Connect GitHub to get started"}
+              • {githubConnected ? (repositoriesCount > 0 ? `${repositoriesCount} projects connected` : "No public repositories detected") : "Connect GitHub to get started"}
             </span>
           </div>
 
@@ -162,7 +162,7 @@ function DashboardHeaderAndTelemetry({
             <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#F7F6F1]">{repositoriesCount}</div>
             <div className="text-xs font-bold text-[#A8B3AC] mt-1 truncate">Projects Analyzed</div>
             <div className="text-[11px] text-[#7A857E] mt-0.5 font-sans line-clamp-2">
-              {repositoriesCount > 0 ? "Projects currently in your Gitrium analysis" : "Connect GitHub to analyze"}
+              {repositoriesCount > 0 ? "Projects currently in your Gitrium analysis" : githubConnected ? "No repositories found on connected account" : "Connect GitHub to analyze"}
             </div>
           </div>
 

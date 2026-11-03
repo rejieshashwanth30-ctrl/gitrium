@@ -80,7 +80,7 @@ export default function IntegrityPage() {
               Consistency &amp; Ethical Safeguards
             </h4>
             <p className="text-xs text-[#A8B3AC] leading-relaxed font-sans">
-              Gitrium does not claim code is 100% human-written. Modern development includes AI tools and libraries. Indicators show steady project activity and consistent commits.
+              Gitrium indicators provide verifiable context regarding steady project activity, commit consistency, and development cadence across your connected codebases.
             </p>
           </div>
         </div>

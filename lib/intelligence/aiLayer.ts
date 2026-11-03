@@ -307,7 +307,7 @@ export function synthesizeEvidenceDeterministically(
  * Cross-validates all AI-generated assertions against the ground-truth EvidenceSnapshot.
  * Corrects any hallucinated numbers (repositories, commits, PR counts) to canonical counts,
  * verifies that mentioned technologies exist in the snapshot, attaches real evidence IDs,
- * strips out forbidden claims (hiring guarantees, 100% human-written), and guarantees 98%+ correctness.
+ * strips out forbidden claims (hiring guarantees, absolute authorship claims), and guarantees evidence grounding.
  */
 export function validateAndGroundAIInsights(
   raw: any,

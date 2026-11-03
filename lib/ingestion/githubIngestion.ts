@@ -59,6 +59,21 @@ async function executeSync(
 
   let syncRunId: string | null = null;
   try {
+    // 0. Auto-heal any stale SYNCING runs (> 3 minutes old) to prevent perpetual spinning
+    await prisma.syncRun.updateMany({
+      where: {
+        userId,
+        status: "SYNCING",
+        startedAt: { lt: new Date(Date.now() - 3 * 60 * 1000) },
+      },
+      data: {
+        status: "FAILED",
+        completedAt: new Date(),
+        errorCode: "SYNC_TIMEOUT",
+        errorMessageSafe: "Previous synchronization timed out or was interrupted.",
+      },
+    });
+
     // Database-backed concurrency guard: check if another instance/tab is actively syncing
     const inProgressRun = await prisma.syncRun.findFirst({
       where: {
@@ -135,6 +150,18 @@ async function executeSync(
   }
 
   if (!token) {
+    if (syncRunId) {
+      await prisma.syncRun.update({
+        where: { id: syncRunId },
+        data: {
+          status: "FAILED",
+          completedAt: new Date(),
+          errorCode: "TOKEN_MISSING",
+          errorMessageSafe: "No GitHub access token found. Please connect your GitHub account.",
+        },
+      }).catch(() => {});
+    }
+
     return {
       repositoriesCount: 0,
       commitsCount: 0,
@@ -253,6 +280,21 @@ async function executeSync(
   }
 
   if (repos.length === 0) {
+    if (syncRunId) {
+      await prisma.syncRun.update({
+        where: { id: syncRunId },
+        data: {
+          status: "COMPLETED",
+          completedAt: new Date(),
+          repositoriesProcessed: 0,
+          commitsProcessed: 0,
+          pullRequestsProcessed: 0,
+          errorCode: null,
+          errorMessageSafe: null,
+        },
+      }).catch(() => {});
+    }
+
     return {
       repositoriesCount: 0,
       commitsCount: 0,
