@@ -479,7 +479,7 @@ export function IntegritySignalsSection() {
 }
 
 // ============================================================================
-// 07 — ABOUT & BUILT BY REJIESH ASHWANTH
+// 07 — ABOUT & ADYK LEADERSHIP
 // Background: Warm Ivory (#F7F6F1)
 // ============================================================================
 export function AboutAndBuiltBySection() {
@@ -530,10 +530,10 @@ export function AboutAndBuiltBySection() {
             </span>
             <div className="space-y-1">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#17201B] tracking-tight">
-                Built by Rejiesh Ashwanth
+                Built by ADYK
               </h2>
               <p className="text-xs sm:text-sm font-sans font-medium text-[#56635C]">
-                Co-Founder — <strong className="text-[#17201B]">ADYK Multi Venture Company</strong>
+                Engineering Division — <strong className="text-[#17201B]">ADYK Multi Venture Company</strong>
               </p>
             </div>
           </div>
@@ -635,22 +635,22 @@ export function AboutAndBuiltBySection() {
           <div className="pt-4 border-t border-[#EFEEE8] flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <a
-                href={PRODUCT_INFO.founder.linkedin}
+                href={PRODUCT_INFO.social.linkedin}
                 target="_blank"
                 rel="noreferrer"
                 className="group inline-flex items-center gap-2 px-3.5 py-2 rounded-[7px] bg-[#F7F6F1] hover:bg-[#18352B] border border-[#DDE1DC] hover:border-[#159A72]/40 text-[#17201B] hover:text-white text-xs font-sans font-medium transition-all active:scale-[0.96] select-none"
               >
                 <Linkedin className="w-3.5 h-3.5 text-[#159A72] group-hover:text-[#34D399] transition-colors" />
-                <span>Founder LinkedIn</span>
+                <span>ADYK LinkedIn</span>
               </a>
               <a
-                href={PRODUCT_INFO.founder.x}
+                href={PRODUCT_INFO.social.x}
                 target="_blank"
                 rel="noreferrer"
                 className="group inline-flex items-center gap-2 px-3.5 py-2 rounded-[7px] bg-[#F7F6F1] hover:bg-[#18352B] border border-[#DDE1DC] hover:border-[#159A72]/40 text-[#17201B] hover:text-white text-xs font-sans font-medium transition-all active:scale-[0.96] select-none"
               >
                 <Twitter className="w-3.5 h-3.5 text-[#159A72] group-hover:text-[#34D399] transition-colors" />
-                <span>Founder X</span>
+                <span>ADYK X</span>
               </a>
             </div>
 

@@ -44,7 +44,7 @@ export default function HomePage() {
         {/* 07: Career Intelligence & Role Alignment (#career - Career) */}
         <CareerIntelligenceSection />
 
-        {/* 08: About Gitrium & Built By Rejiesh Ashwanth (#about - About) */}
+        {/* 08: About Gitrium & ADYK Leadership (#about - About) */}
         <AboutAndBuiltBySection />
 
         {/* 09: Company & Contact (ADYK Multi Venture Company + Socials #contact) */}

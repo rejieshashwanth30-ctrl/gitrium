@@ -125,10 +125,7 @@ export function HeroSection() {
                     Developer Evidence
                   </span>
                   <div className="text-sm sm:text-base font-bold text-[#F7F6F1] flex items-center gap-1.5 mt-0.5">
-                    <span>Rejiesh Ashwanth</span>
-                    <span className="text-[11px] font-mono font-normal text-[#A8B3AC]">
-                      (@rejieshashwanth)
-                    </span>
+                    <span>DEVELOPER PROFILE</span>
                   </div>
                 </div>
 

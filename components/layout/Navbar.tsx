@@ -141,7 +141,7 @@ export function Navbar() {
           {/* LEFT: Gitrium Official Logo */}
           <div className="flex items-center shrink-0 min-w-0">
             <GitriumLogo
-              variant="full"
+              variant="horizontal"
               size="sm"
               textColor="light"
               className="w-auto"

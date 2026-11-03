@@ -66,14 +66,14 @@ export function Footer() {
             <p className="text-xs text-[#A8B3AC]">
               Built by{" "}
               <a
-                href={PRODUCT_INFO.founder.linkedin}
+                href={PRODUCT_INFO.social.linkedin}
                 target="_blank"
                 rel="noreferrer"
                 className="text-[#F7F6F1] hover:underline font-semibold"
               >
-                Rejiesh Ashwanth
+                ADYK Multi Venture Company
               </a>
-              , Co-Founder.
+              .
             </p>
 
             <div className="flex items-center gap-3 pt-2 text-xs font-mono">

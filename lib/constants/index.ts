@@ -8,10 +8,10 @@ export const PRODUCT_INFO = {
     "Gitrium is an evidence-backed developer intelligence platform that analyzes your GitHub repositories, contributions, project history and development activity to build an evidence-backed view of your engineering skills.",
   company: "ADYK Multi Venture Company",
   founder: {
-    name: "Rejiesh Ashwanth",
-    role: "Co-Founder — ADYK Multi Venture Company",
-    linkedin: "https://www.linkedin.com/in/rejiesh-ashwanth-v-33ab1b37b",
-    x: "https://x.com/rejieshashhh",
+    name: "ADYK Leadership",
+    role: "Leadership & Engineering — ADYK Multi Venture Company",
+    linkedin: "https://www.linkedin.com/in/adyk-a-multi-venture-company-38782a431",
+    x: "https://x.com/adyk_inn",
   },
   social: {
     linkedin: "https://www.linkedin.com/in/adyk-a-multi-venture-company-38782a431",

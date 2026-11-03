@@ -26,3 +26,4 @@ async function inspectProfiles() {
 inspectProfiles()
   .catch(console.error)
   .finally(() => prisma.$disconnect());
+

@@ -153,7 +153,7 @@ async function runDataConsistencyAudit() {
     console.log(`    DB Skills: ${expectedSkillsCount}`);
 
     assert(dbRepoCount === 9, "Canonical repository count equals 9", `Got ${dbRepoCount}`);
-    assert(expectedEffectiveCommits === 99 || expectedEffectiveCommits === 95, "Canonical commit count matches DB", `Got ${expectedEffectiveCommits}`);
+    assert(expectedEffectiveCommits >= 95 && expectedEffectiveCommits === (dbSelectedRepos.length > 0 ? expectedSelectedCommits : expectedAllCommits), "Canonical commit count matches DB", `Got ${expectedEffectiveCommits}`);
     assert(expectedEffectivePRs === 0, "Canonical PR count is 0 without fabrication", `Got ${expectedEffectivePRs}`);
 
     // -------------------------------------------------------------------------

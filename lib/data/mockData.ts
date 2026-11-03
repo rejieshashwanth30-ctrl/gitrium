@@ -17,11 +17,11 @@ import {
 
 export const MOCK_USER: User = {
   id: "usr_adyk_1001",
-  name: "Rejiesh Ashwanth",
-  username: "rejieshashwanth",
-  email: "rejiesh@adyk.co",
+  name: "Developer Profile",
+  username: "developer-demo",
+  email: "developer@adyk.co",
   avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256",
-  bio: "Co-Founder — ADYK Multi Venture Company. Building developer intelligence, mobile platforms, and systems architecture.",
+  bio: "Full-stack and systems developer building verified software applications.",
   location: "Bengaluru, India & Remote",
   company: "ADYK Multi Venture Company",
   website: "https://adyk.co",
@@ -33,8 +33,8 @@ export const MOCK_USER: User = {
 export const MOCK_GITHUB: GitHubAccount = {
   id: "gh_acc_9021",
   userId: "usr_adyk_1001",
-  username: "rejieshashwanth",
-  profileUrl: "https://github.com/rejieshashwanth",
+  username: "developer-demo",
+  profileUrl: "https://github.com/developer-demo",
   avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256",
   publicRepos: 18,
   totalCommits: 842,
@@ -50,7 +50,7 @@ export const MOCK_REPOSITORIES: Repository[] = [
   {
     id: "repo_wiqn",
     name: "wiqn-mobile-app",
-    fullName: "rejieshashwanth/wiqn-mobile-app",
+    fullName: "demo/wiqn-mobile-app",
     description: "Production mobile client built with Flutter, Riverpod state management, and real-time offline sync.",
     isPrivate: false,
     isFork: false,
@@ -80,7 +80,7 @@ export const MOCK_REPOSITORIES: Repository[] = [
   {
     id: "repo_engine",
     name: "gitrium-evidence-engine",
-    fullName: "rejieshashwanth/gitrium-evidence-engine",
+    fullName: "demo/gitrium-evidence-engine",
     description: "High-throughput AST analysis engine in TypeScript & Next.js for synthesizing code provenance signals.",
     isPrivate: false,
     isFork: false,
@@ -110,7 +110,7 @@ export const MOCK_REPOSITORIES: Repository[] = [
   {
     id: "repo_nexus",
     name: "nexus-api-gateway",
-    fullName: "rejieshashwanth/nexus-api-gateway",
+    fullName: "demo/nexus-api-gateway",
     description: "Distributed reverse proxy and rate limiting gateway written with Python FastAPI and Redis stream buffers.",
     isPrivate: false,
     isFork: false,
@@ -140,7 +140,7 @@ export const MOCK_REPOSITORIES: Repository[] = [
   {
     id: "repo_sentinel",
     name: "sentinel-security-scanner",
-    fullName: "rejieshashwanth/sentinel-security-scanner",
+    fullName: "demo/sentinel-security-scanner",
     description: "Automated secret leakage, credential rotation detection, and container dependency integrity monitor.",
     isPrivate: true,
     isFork: false,
@@ -271,7 +271,7 @@ export const MOCK_SKILL_EVIDENCE: Record<string, SkillEvidence> = {
         id: "ev_fl_1",
         sourceType: "Repository",
         sourceName: "wiqn-mobile-app",
-        sourceIdentifier: "rejieshashwanth/wiqn-mobile-app",
+        sourceIdentifier: "demo/wiqn-mobile-app",
         timestamp: "2026-10-27",
         description: "Primary client codebase with 48k+ lines of Dart code and 42 distinct widget feature modules.",
         strength: "Strong Evidence",
@@ -312,7 +312,7 @@ export const MOCK_SKILL_EVIDENCE: Record<string, SkillEvidence> = {
         id: "ev_nx_1",
         sourceType: "Repository",
         sourceName: "gitrium-evidence-engine",
-        sourceIdentifier: "rejieshashwanth/gitrium-evidence-engine",
+        sourceIdentifier: "demo/gitrium-evidence-engine",
         timestamp: "2026-10-28",
         description: "Full Next.js App Router enterprise dashboard with typed route handlers and responsive UI.",
         strength: "Strong Evidence",
@@ -477,7 +477,7 @@ export const MOCK_RECENT_ACTIVITY: ActivityEvent[] = [
   {
     id: "act_1",
     type: "commit",
-    title: "Committed to rejieshashwanth/wiqn-mobile-app",
+    title: "Committed to demo/wiqn-mobile-app",
     description: "refactor: optimize SQLite write transaction batching for offline queue",
     repository: "wiqn-mobile-app",
     timestamp: "2 hours ago",
@@ -486,7 +486,7 @@ export const MOCK_RECENT_ACTIVITY: ActivityEvent[] = [
   {
     id: "act_2",
     type: "pr",
-    title: "Merged PR #38 in rejieshashwanth/wiqn-mobile-app",
+    title: "Merged PR #38 in demo/wiqn-mobile-app",
     description: "feat: add biometric passkey biometric prompt and fallback",
     repository: "wiqn-mobile-app",
     timestamp: "1 day ago",
@@ -535,12 +535,12 @@ export const MOCK_ANALYSIS_REPORT: AnalysisReport = {
   id: "rep_wiqn_20261028",
   repositoryId: "repo_wiqn",
   repositoryName: "wiqn-mobile-app",
-  owner: "rejieshashwanth",
+  owner: "developer-demo",
   generatedAt: "2026-10-28T09:45:00Z",
   overallEvidenceScore: 89,
   evidenceStrength: "Strong Evidence",
   summary:
-    "Comprehensive AST and Git graph audit of rejieshashwanth/wiqn-mobile-app confirms mature engineering rigor. The codebase exhibits multi-package modularity, systematic Riverpod state management, comprehensive offline-first SQLite synchronization, and active maintenance over 14 consecutive months.",
+    "Comprehensive AST and Git graph audit of demo/wiqn-mobile-app confirms mature engineering rigor. The codebase exhibits multi-package modularity, systematic Riverpod state management, comprehensive offline-first SQLite synchronization, and active maintenance over 14 consecutive months.",
   repositoryStats: {
     totalCommits: 412,
     totalContributors: 3,
