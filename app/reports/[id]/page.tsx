@@ -255,14 +255,18 @@ export default function ReportDetailPage() {
                 Observed Technical Strengths:
               </span>
               <ul className="space-y-1.5 text-xs text-[#17201B] font-sans">
-                {(ai.strengths || [
-                  { title: "Modular Architecture", explanation: "Consistent separation of concerns across audited repositories." }
-                ]).slice(0, 3).map((item: any, i: number) => (
-                  <li key={i} className="flex items-start gap-1.5">
-                    <span className="text-[#159A72] font-bold">•</span>
-                    <span><strong>{item.title || item}:</strong> {item.explanation || ""}</span>
+                {ai.strengths && ai.strengths.length > 0 ? (
+                  ai.strengths.slice(0, 3).map((item: any, i: number) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="text-[#159A72] font-bold">•</span>
+                      <span><strong>{item.title || item}:</strong> {item.explanation || ""}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li className="text-[#7A857E] italic">
+                    No repository evidence is currently available to assess technical strengths.
                   </li>
-                ))}
+                )}
               </ul>
             </div>
 

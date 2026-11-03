@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { ensureUserProfile } from "@/lib/auth/profileService";
 import { prisma } from "@/lib/db/prisma";
-import { generateAIInterpretation } from "@/lib/intelligence/aiLayer";
+import { generateAIInterpretation, enrichEvidenceSnapshot } from "@/lib/intelligence/aiLayer";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -95,7 +95,9 @@ export async function GET(
           const languages = repo.languages.map((l) => l.name);
           const repoTechNames = (repo.technologies || []).map((t: any) => t.name);
 
-          const ai = await generateAIInterpretation({
+          const ai = await generateAIInterpretation(enrichEvidenceSnapshot({
+            userId: profile.id,
+            evidenceVersion: "v2.0_personalized",
             developerName: profile.displayName || profile.username || "Developer",
             githubUsername: profile.username || undefined,
             repositories: [
@@ -127,7 +129,7 @@ export async function GET(
             uniqueLanguages: [repo.primaryLanguage].filter(Boolean) as string[],
             uniqueTechnologies: repoTechNames,
             lastActivity: new Date().toISOString(),
-          });
+          }));
 
           const reportHash = crypto
             .createHash("sha256")
@@ -235,7 +237,9 @@ export async function GET(
               );
 
           const allTargetTechNames = Array.from(new Set(selectedRepos.flatMap((r) => (r.technologies || []).map((t: any) => t.name))));
-          const ai = await generateAIInterpretation({
+          const ai = await generateAIInterpretation(enrichEvidenceSnapshot({
+            userId: profile.id,
+            evidenceVersion: "v2.0_personalized",
             developerName: profile.displayName || profile.username || "Developer",
             githubUsername: profile.username || undefined,
             repositories: selectedRepos.map((r) => ({
@@ -265,7 +269,7 @@ export async function GET(
             uniqueLanguages: Array.from(new Set(selectedRepos.map((r) => r.primaryLanguage).filter(Boolean))) as string[],
             uniqueTechnologies: allTargetTechNames,
             lastActivity: new Date().toISOString(),
-          });
+          }));
 
           const reportHash = crypto
             .createHash("sha256")

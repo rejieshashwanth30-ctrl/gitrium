@@ -146,7 +146,7 @@ export function AiInterpretationSection({
         </p>
 
         {/* 1. Your Strength */}
-        {strengths.length > 0 && (
+        {strengths.length > 0 ? (
           <div className="p-3.5 rounded-[8px] bg-[#151A17] border border-[#24352C] space-y-1">
             <div className="flex items-center gap-1.5 text-[#159A72] text-[11px] font-bold uppercase">
               <CheckCircle2 className="w-3.5 h-3.5 text-[#159A72] shrink-0" />
@@ -155,6 +155,16 @@ export function AiInterpretationSection({
             <p className="text-xs font-bold text-[#F7F6F1]">{strengths[0].title}</p>
             <p className="text-[11px] text-[#A8B3AC] font-sans leading-relaxed">
               {strengths[0].explanation}
+            </p>
+          </div>
+        ) : (
+          <div className="p-3.5 rounded-[8px] bg-[#151A17] border border-[#24352C] space-y-1">
+            <div className="flex items-center gap-1.5 text-[#7A857E] text-[11px] font-bold uppercase">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#7A857E] shrink-0" />
+              <span>Your Strength</span>
+            </div>
+            <p className="text-[11px] text-[#7A857E] font-sans leading-relaxed">
+              Connect your active GitHub repositories to discover your code-backed strengths.
             </p>
           </div>
         )}
@@ -233,16 +243,22 @@ export function AiInterpretationSection({
             <span>Your Strengths</span>
           </div>
           <div className="space-y-3">
-            {strengths.slice(0, 3).map((item, idx) => (
-              <div key={idx} className="space-y-1">
-                <p className="text-xs font-bold text-[#F7F6F1]">
-                  {item.title}
-                </p>
-                <p className="text-[11px] text-[#A8B3AC] leading-snug font-sans">
-                  {item.explanation}
-                </p>
-              </div>
-            ))}
+            {strengths.length > 0 ? (
+              strengths.slice(0, 3).map((item, idx) => (
+                <div key={idx} className="space-y-1">
+                  <p className="text-xs font-bold text-[#F7F6F1]">
+                    {item.title}
+                  </p>
+                  <p className="text-[11px] text-[#A8B3AC] leading-snug font-sans">
+                    {item.explanation}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="text-[11px] text-[#7A857E] leading-snug font-sans">
+                Connect your active GitHub repositories to discover your code-backed strengths.
+              </p>
+            )}
           </div>
         </div>
 

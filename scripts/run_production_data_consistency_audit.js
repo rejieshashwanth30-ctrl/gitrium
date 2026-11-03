@@ -14,6 +14,28 @@
  * RULE: EXPECTED = DATABASE SOURCE OF TRUTH. If ANY value !== EXPECTED, FAIL THE TEST.
  */
 
+const fs = require("fs");
+const path = require("path");
+
+// Load .env manually if present
+const envPath = path.join(__dirname, "..", ".env");
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, "utf8").split("\n").forEach((line) => {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith("#")) {
+      const idx = trimmed.indexOf("=");
+      if (idx !== -1) {
+        const key = trimmed.substring(0, idx).trim();
+        let val = trimmed.substring(idx + 1).trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.substring(1, val.length - 1);
+        }
+        if (!process.env[key]) process.env[key] = val;
+      }
+    }
+  });
+}
+
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const crypto = require("crypto");
@@ -82,34 +104,36 @@ async function runDataConsistencyAudit() {
     const primaryProfile = profiles.find((p) => p.githubUsername === "rejieshashwanth30-ctrl") || profiles[0];
     console.log(`  Auditing primary profile: ${primaryProfile.email} (@${primaryProfile.githubUsername || primaryProfile.username})`);
 
-    const [
-      dbRepoCount,
-      dbSelectedRepos,
-      dbAllAggregate,
-      dbLanguages,
-      dbTechnologies,
-      dbSkills,
-    ] = await Promise.all([
-      prisma.repository.count({ where: { userId: primaryProfile.id } }),
-      prisma.repository.findMany({
-        where: { userId: primaryProfile.id, isSelected: true },
-        select: { id: true, commitCount: true, prCount: true },
-      }),
-      prisma.repository.aggregate({
-        where: { userId: primaryProfile.id },
-        _sum: { commitCount: true, prCount: true },
-      }),
-      prisma.repositoryLanguage.findMany({
-        where: { repository: { userId: primaryProfile.id } },
-      }),
-      prisma.repositoryTechnology.findMany({
-        where: { repository: { userId: primaryProfile.id } },
-        distinct: ["name"],
-      }),
-      prisma.skill.findMany({
-        where: { userId: primaryProfile.id },
-      }),
-    ]);
+    async function queryWithRetry(fn, maxRetries = 3) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          return await fn();
+        } catch (err) {
+          if (attempt === maxRetries) throw err;
+          await new Promise((res) => setTimeout(res, 500 * attempt));
+        }
+      }
+    }
+
+    const dbRepoCount = await queryWithRetry(() => prisma.repository.count({ where: { userId: primaryProfile.id } }));
+    const dbSelectedRepos = await queryWithRetry(() => prisma.repository.findMany({
+      where: { userId: primaryProfile.id, isSelected: true },
+      select: { id: true, commitCount: true, prCount: true },
+    }));
+    const dbAllAggregate = await queryWithRetry(() => prisma.repository.aggregate({
+      where: { userId: primaryProfile.id },
+      _sum: { commitCount: true, prCount: true },
+    }));
+    const dbLanguages = await queryWithRetry(() => prisma.repositoryLanguage.findMany({
+      where: { repository: { userId: primaryProfile.id } },
+    }));
+    const dbTechnologies = await queryWithRetry(() => prisma.repositoryTechnology.findMany({
+      where: { repository: { userId: primaryProfile.id } },
+      distinct: ["name"],
+    }));
+    const dbSkills = await queryWithRetry(() => prisma.skill.findMany({
+      where: { userId: primaryProfile.id },
+    }));
 
     const expectedAllCommits = dbAllAggregate._sum.commitCount || 0;
     const expectedAllPRs = dbAllAggregate._sum.prCount || 0;
@@ -246,3 +270,4 @@ async function runDataConsistencyAudit() {
 }
 
 runDataConsistencyAudit();
+

@@ -5,25 +5,265 @@ const crypto = require("crypto");
  * 
  * Evaluates the AI interpretation layer against 50 representative, independently verifiable
  * developer evidence benchmarks to measure factual correctness, numeric accuracy,
- * evidence grounding, and absence of hallucinations.
+ * evidence grounding, personalization, and absence of hallucinations.
  * Target: >= 98% correctness on eligible, verifiable insight claims.
  */
 
+function enrichEvidenceSnapshot(snapshot) {
+  const sortedRepos = [...(snapshot.repositories || [])].sort((a, b) => (b.commitCount || 0) - (a.commitCount || 0));
+  const topRepos = sortedRepos.slice(0, 3);
+  const totalCommits = snapshot.totalCommits || 0;
+  const repoCount = sortedRepos.length;
+
+  const langMap = new Map();
+  for (const r of sortedRepos) {
+    if (r.language) {
+      const existing = langMap.get(r.language) || { repoCount: 0, commitCount: 0 };
+      existing.repoCount += 1;
+      existing.commitCount += r.commitCount || 0;
+      langMap.set(r.language, existing);
+    }
+  }
+
+  const dominantLanguages = Array.from(langMap.entries())
+    .map(([name, data]) => ({
+      name,
+      repoCount: data.repoCount,
+      commitCount: data.commitCount,
+      sharePercentage: totalCommits > 0 ? Math.round((data.commitCount / totalCommits) * 100) : 0,
+    }))
+    .sort((a, b) => b.commitCount - a.commitCount || b.repoCount - a.repoCount);
+
+  const techMap = new Map();
+  for (const r of sortedRepos) {
+    for (const t of r.technologies || []) {
+      if (!t) continue;
+      const list = techMap.get(t) || [];
+      if (!list.includes(r.name)) list.push(r.name);
+      techMap.set(t, list);
+    }
+  }
+
+  const dominantTechnologies = Array.from(techMap.entries())
+    .map(([name, repoNames]) => ({
+      name,
+      projectCount: repoNames.length,
+      repoNames,
+    }))
+    .sort((a, b) => b.projectCount - a.projectCount);
+
+  let temporalCadence;
+  const activeRepos = sortedRepos.filter((r) => (r.commitCount || 0) > 0);
+  const primaryActiveRepo = topRepos.length > 0 ? topRepos[0] : null;
+
+  if (repoCount === 0 || totalCommits === 0) {
+    temporalCadence = {
+      commitDistribution: "insufficient",
+      primaryActiveRepo: null,
+      primaryActiveRepoCommits: 0,
+      activeRepoCount: 0,
+      totalCommits: 0,
+      activityDescription: "GitHub history is currently insufficient to assess development cadence.",
+    };
+  } else if (totalCommits < 10) {
+    temporalCadence = {
+      commitDistribution: "sparse",
+      primaryActiveRepo: primaryActiveRepo?.name || null,
+      primaryActiveRepoCommits: primaryActiveRepo?.commitCount || 0,
+      activeRepoCount: activeRepos.length,
+      totalCommits,
+      activityDescription: "Your recent GitHub activity reflects early project additions with limited commit history.",
+    };
+  } else if (primaryActiveRepo && primaryActiveRepo.commitCount >= totalCommits * 0.7 && activeRepos.length <= 2) {
+    temporalCadence = {
+      commitDistribution: "concentrated",
+      primaryActiveRepo: primaryActiveRepo.name,
+      primaryActiveRepoCommits: primaryActiveRepo.commitCount,
+      activeRepoCount: activeRepos.length,
+      totalCommits,
+      activityDescription: `Your development activity is heavily focused in your flagship project ${primaryActiveRepo.name} (${primaryActiveRepo.commitCount} commits).`,
+    };
+  } else {
+    temporalCadence = {
+      commitDistribution: "distributed",
+      primaryActiveRepo: primaryActiveRepo?.name || null,
+      primaryActiveRepoCommits: primaryActiveRepo?.commitCount || 0,
+      activeRepoCount: activeRepos.length,
+      totalCommits,
+      activityDescription: `Your activity demonstrates steady progress distributed across ${activeRepos.length} active repositories.`,
+    };
+  }
+
+  const enriched = {
+    ...snapshot,
+    evidenceVersion: "v2.0_personalized",
+    topRepositories: topRepos,
+    dominantLanguages,
+    dominantTechnologies,
+    temporalCadence,
+  };
+
+  enriched.candidateStrengths = rankStrengthCandidates(enriched);
+  return enriched;
+}
+
+function rankStrengthCandidates(snapshot) {
+  const repoCount = (snapshot.repositories || []).length;
+  const totalCommits = snapshot.totalCommits || 0;
+
+  if (repoCount === 0 || totalCommits === 0) {
+    return [];
+  }
+
+  const topRepos = snapshot.topRepositories || (snapshot.repositories || []).slice(0, 3);
+  const dominantLangs = snapshot.dominantLanguages || [];
+  const dominantTechs = snapshot.dominantTechnologies || [];
+  const cadence = snapshot.temporalCadence;
+
+  if (totalCommits < 10 || (repoCount === 1 && totalCommits < 5)) {
+    const primaryRepo = topRepos[0] || snapshot.repositories[0];
+    const detectedLang = primaryRepo?.language || (dominantLangs[0]?.name) || "Software";
+    return [
+      {
+        category: "sparse_observation",
+        title: `Early Project Activity in ${detectedLang}`,
+        explanation: `Gitrium recorded initial activity in ${primaryRepo?.name || "your repository"} with ${totalCommits} commits. Additional commits and project history are needed to build verifiable skill evidence.`,
+        evidenceStrength: "Limited Evidence",
+        evidenceIds: primaryRepo ? [primaryRepo.id] : undefined,
+        citedRepos: primaryRepo ? [primaryRepo.name] : [],
+        citedTechs: [detectedLang],
+      },
+    ];
+  }
+
+  const candidates = [];
+
+  if (dominantLangs.length > 0) {
+    const topLang = dominantLangs[0];
+    const langRepos = (snapshot.repositories || []).filter(
+      (r) => (r.language || "").toLowerCase() === topLang.name.toLowerCase()
+    );
+    const citedRepoNames = langRepos.map((r) => r.name).slice(0, 3);
+    const strengthRating =
+      topLang.commitCount >= 25 || langRepos.length >= 2
+        ? "Strong Evidence"
+        : "Moderate Evidence";
+
+    const titlePrefix = strengthRating === "Strong Evidence" ? "Strong" : "Verified";
+    const repoDetails = citedRepoNames.length > 0 ? ` (including ${citedRepoNames.join(", ")})` : "";
+
+    candidates.push({
+      category: "primary_stack",
+      title: `${titlePrefix} ${topLang.name} Development Evidence`,
+      explanation: `${topLang.name} appears as your primary language across ${langRepos.length} project${langRepos.length === 1 ? "" : "s"}${repoDetails}, supported by ${topLang.commitCount} recorded commits.`,
+      evidenceStrength: strengthRating,
+      evidenceIds: langRepos.map((r) => r.id),
+      citedRepos: citedRepoNames,
+      citedTechs: [topLang.name],
+    });
+  }
+
+  const knownFrameworks = [
+    "react", "next.js", "vue", "angular", "svelte", "express", "fastapi",
+    "django", "flask", "spring", "flutter", "react native", "tailwind",
+    "prisma", "docker", "graphql", "pytorch", "tensorflow", "kubernetes",
+    "android", "ios", "rust", "go", "sql", "postgresql"
+  ];
+
+  const topFramework = dominantTechs.find((t) =>
+    knownFrameworks.some((kf) => t.name.toLowerCase().includes(kf))
+  ) || dominantTechs[0];
+
+  if (topFramework) {
+    const citedFwRepos = topFramework.repoNames.slice(0, 3);
+    const fwRepoDetails = citedFwRepos.length > 0 ? ` in ${citedFwRepos.join(", ")}` : "";
+    const fwStrength = topFramework.projectCount >= 2 ? "Strong Evidence" : "Moderate Evidence";
+
+    candidates.push({
+      category: "specialized_framework",
+      title: `Verified ${topFramework.name} Project Architecture`,
+      explanation: `${topFramework.name} implementation verified across ${topFramework.projectCount} project${topFramework.projectCount === 1 ? "" : "s"}${fwRepoDetails}, demonstrating practical application structure.`,
+      evidenceStrength: fwStrength,
+      evidenceIds: (snapshot.repositories || []).filter((r) => citedFwRepos.includes(r.name)).map((r) => r.id),
+      citedRepos: citedFwRepos,
+      citedTechs: [topFramework.name],
+    });
+  } else if (dominantLangs.length > 1 && dominantLangs[1].commitCount >= 5) {
+    const secondLang = dominantLangs[1];
+    const secondRepos = (snapshot.repositories || []).filter(
+      (r) => (r.language || "").toLowerCase() === secondLang.name.toLowerCase()
+    );
+    const citedSecond = secondRepos.map((r) => r.name).slice(0, 3);
+
+    candidates.push({
+      category: "specialized_framework",
+      title: `Hands-on Experience in ${secondLang.name}`,
+      explanation: `Verified contributions in ${secondLang.name} across ${secondRepos.length} project${secondRepos.length === 1 ? "" : "s"} (${citedSecond.join(", ")}), demonstrating multi-language capabilities.`,
+      evidenceStrength: "Moderate Evidence",
+      evidenceIds: secondRepos.map((r) => r.id),
+      citedRepos: citedSecond,
+      citedTechs: [secondLang.name],
+    });
+  }
+
+  if (cadence && cadence.commitDistribution === "concentrated" && cadence.primaryActiveRepo) {
+    const primeRepo = (snapshot.repositories || []).find((r) => r.name === cadence.primaryActiveRepo);
+    candidates.push({
+      category: "development_cadence",
+      title: `Focused Iterative Depth in ${cadence.primaryActiveRepo}`,
+      explanation: `Development activity is concentrated in your flagship repository ${cadence.primaryActiveRepo} (${cadence.primaryActiveRepoCommits} commits), reflecting sustained in-depth iteration.`,
+      evidenceStrength: "Strong Evidence",
+      evidenceIds: primeRepo ? [primeRepo.id] : undefined,
+      citedRepos: [cadence.primaryActiveRepo],
+      citedTechs: primeRepo?.language ? [primeRepo.language] : [],
+    });
+  } else if (cadence && cadence.commitDistribution === "distributed" && cadence.activeRepoCount >= 2) {
+    const activeNames = topRepos.filter((r) => (r.commitCount || 0) > 0).map((r) => r.name).slice(0, 3);
+    candidates.push({
+      category: "development_cadence",
+      title: "Multi-Project Development Cadence",
+      explanation: `Commit activity is distributed across ${cadence.activeRepoCount} active repositories (${activeNames.join(", ")}), demonstrating steady multi-codebase maintenance.`,
+      evidenceStrength: "Strong Evidence",
+      evidenceIds: topRepos.map((r) => r.id),
+      citedRepos: activeNames,
+      citedTechs: [],
+    });
+  } else if (candidates.length < 3 && topRepos.length > 0) {
+    const flagship = topRepos[0];
+    candidates.push({
+      category: "development_cadence",
+      title: `Verified Work in ${flagship.name}`,
+      explanation: `Project repository contains ${flagship.commitCount} commits with ${flagship.language || "code"} contributions.`,
+      evidenceStrength: flagship.commitCount >= 15 ? "Moderate Evidence" : "Limited Evidence",
+      evidenceIds: [flagship.id],
+      citedRepos: [flagship.name],
+      citedTechs: flagship.language ? [flagship.language] : [],
+    });
+  }
+
+  return candidates.slice(0, 3);
+}
+
 function computeEvidenceSnapshotHash(snapshot) {
+  const version = "v2.0_personalized";
   const content = [
+    version,
+    snapshot.userId || "",
     snapshot.developerName,
     snapshot.githubUsername || "",
-    snapshot.totalCommits,
-    snapshot.totalPRs,
-    snapshot.repositories.map((r) => `${r.name}:${r.commitCount}`).sort().join(","),
-    snapshot.skills.map((s) => `${s.name}:${s.proficiencyScore}`).sort().join(","),
-    snapshot.uniqueTechnologies.sort().join(","),
+    snapshot.totalCommits || 0,
+    snapshot.totalPRs || 0,
+    (snapshot.repositories || []).map((r) => `${r.name}:${r.commitCount || 0}:${r.language || ""}`).sort().join(","),
+    (snapshot.skills || []).map((s) => `${s.name}:${s.proficiencyScore || 0}`).sort().join(","),
+    (snapshot.uniqueTechnologies || []).slice().sort().join(","),
+    (snapshot.uniqueLanguages || []).slice().sort().join(","),
   ].join("|");
 
   return crypto.createHash("sha256").update(content).digest("hex");
 }
 
-function synthesizeEvidenceDeterministically(snapshot, hash) {
+function synthesizeEvidenceDeterministically(rawSnapshot, hash) {
+  const snapshot = rawSnapshot.topRepositories ? rawSnapshot : enrichEvidenceSnapshot(rawSnapshot);
   const {
     developerName,
     repositories,
@@ -33,15 +273,18 @@ function synthesizeEvidenceDeterministically(snapshot, hash) {
     testingDetected,
     uniqueLanguages,
     uniqueTechnologies,
+    dominantLanguages,
+    dominantTechnologies,
+    temporalCadence,
   } = snapshot;
 
-  const repoCount = repositories.length;
-  const primaryLangs = uniqueLanguages.filter(Boolean);
-  const topSkills = skills.slice(0, 4);
+  const repoCount = (repositories || []).length;
+  const primaryLangs = (uniqueLanguages || []).filter(Boolean);
+  const topSkills = (skills || []).slice(0, 4);
 
   if (repoCount === 0 || totalCommits === 0) {
     return {
-      summary: "Gitrium did not find enough project activity yet. Connect your GitHub account to review your projects, skills, and growth.",
+      summary: "Gitrium did not find enough repository activity yet. Connect your GitHub account to review your projects, skills, and growth.",
       strengths: [],
       emergingSkills: [],
       developmentAreas: [
@@ -72,115 +315,125 @@ function synthesizeEvidenceDeterministically(snapshot, hash) {
     };
   }
 
-  const langText = primaryLangs.length > 0 ? primaryLangs.slice(0, 3).join(", ") : "modern web technologies";
-  const summary = `Your GitHub activity shows consistent work across ${repoCount} project${repoCount === 1 ? "" : "s"} and ${totalCommits} verified commits. You have strong evidence of hands-on development with ${langText}.`;
+  const langText = (dominantLanguages && dominantLanguages.length > 0)
+    ? dominantLanguages.slice(0, 3).map((l) => l.name).join(", ")
+    : primaryLangs.length > 0
+    ? primaryLangs.slice(0, 3).join(", ")
+    : "software development";
 
-  const strengths = [];
-  const hasTypeScript = primaryLangs.some((l) => l.toLowerCase().includes("typescript")) ||
-    uniqueTechnologies.some((t) => t.toLowerCase().includes("typescript"));
-  const hasFrontend = primaryLangs.some((l) => ["javascript", "html", "css", "react"].includes(l.toLowerCase())) ||
-    uniqueTechnologies.some((t) => ["react", "next.js", "tailwind", "vue", "html", "css"].includes(t.toLowerCase()));
+  const topRepoNames = (snapshot.topRepositories || repositories.slice(0, 2)).map((r) => r.name);
+  const repoMention = topRepoNames.length > 0 ? ` (notably ${topRepoNames.join(" and ")})` : "";
+  const summary = `Your GitHub activity shows verified development across ${repoCount} project${repoCount === 1 ? "" : "s"}${repoMention}. Gitrium analyzed ${totalCommits} commits and confirmed sustained usage of ${langText}.`;
 
-  if (hasTypeScript && hasFrontend) {
-    strengths.push({
-      title: "Strong Web Development Experience",
-      explanation: "You have worked with TypeScript, JavaScript, HTML, and CSS across multiple projects.",
-      evidenceIds: repositories.filter((r) => (r.language || "").toLowerCase().includes("typescript")).map((r) => r.id),
-    });
-  } else if (hasTypeScript) {
-    strengths.push({
-      title: "Strong TypeScript Experience",
-      explanation: "You have used TypeScript repeatedly across several projects.",
-      evidenceIds: repositories.filter((r) => (r.language || "").toLowerCase().includes("typescript")).map((r) => r.id),
-    });
-  } else if (primaryLangs.length > 0) {
-    strengths.push({
-      title: `Strong ${primaryLangs[0]} Experience`,
-      explanation: `You have used ${primaryLangs[0]} across multiple projects with regular updates and commits.`,
-      evidenceIds: repositories.filter((r) => r.language === primaryLangs[0]).map((r) => r.id),
-    });
-  }
+  const candidates = snapshot.candidateStrengths || rankStrengthCandidates(snapshot);
+  const strengths = candidates.map((c) => ({
+    title: c.title,
+    explanation: c.explanation,
+    evidenceIds: c.evidenceIds,
+    evidenceStrength: c.evidenceStrength,
+    citedRepos: c.citedRepos,
+  }));
 
-  if (hasFrontend && strengths.length < 2) {
-    strengths.push({
-      title: "Strong Frontend Experience",
-      explanation: "Frontend tools and UI components appear repeatedly across your projects.",
-    });
-  }
-
-  if (totalCommits > 15) {
-    strengths.push({
-      title: "Consistent Development Activity",
-      explanation: "You regularly update your projects and maintain steady development activity.",
-    });
-  }
-
-  const emergingSkills = skills
+  const emergingSkills = (skills || [])
     .filter((s) => s.evidenceStrength === "Moderate Evidence" || s.evidenceStrength === "Limited Evidence")
     .slice(0, 3)
     .map((s) => ({
       skill: s.name,
-      explanation: `Your recent projects show regular use of ${s.name}.`,
+      explanation: `Your recent projects show growing use of ${s.name}.`,
       evidenceIds: [s.name],
     }));
 
-  if (emergingSkills.length === 0 && uniqueTechnologies.length > 1) {
-    const growingTech = uniqueTechnologies.find((t) => !hasTypeScript || t.toLowerCase() !== "typescript") || uniqueTechnologies[0];
-    emergingSkills.push({
-      skill: growingTech,
-      explanation: `Your recent projects show regular use of ${growingTech}.`,
-    });
+  if (emergingSkills.length === 0 && (dominantTechnologies || []).length > 1) {
+    const primaryTech = dominantTechnologies?.[0]?.name;
+    const secondaryTech = dominantTechnologies?.find((t) => t.name !== primaryTech) || dominantTechnologies?.[1];
+    if (secondaryTech) {
+      emergingSkills.push({
+        skill: secondaryTech.name,
+        explanation: `Verified implementation across ${secondaryTech.projectCount} project${secondaryTech.projectCount === 1 ? "" : "s"} (${secondaryTech.repoNames.slice(0, 2).join(", ")}).`,
+      });
+    }
   }
 
   const developmentAreas = [];
+  const primaryLangName = dominantLanguages?.[0]?.name || primaryLangs[0] || "Code";
+
   if (!testingDetected) {
     developmentAreas.push({
-      title: "Add Automated Tests",
-      explanation: "Adding tests to your main projects can make your code more reliable.",
+      title: `Add Automated Tests in ${primaryLangName}`,
+      explanation: `Introducing automated test suites to your primary codebases will strengthen verifiable code integrity.`,
     });
   }
-  developmentAreas.push({
-    title: "Keep Main Projects Active & Documented",
-    explanation: "Adding clear README guides and regular updates will make your projects easier to understand.",
-  });
+
+  if (temporalCadence && temporalCadence.commitDistribution === "concentrated" && temporalCadence.primaryActiveRepo) {
+    developmentAreas.push({
+      title: "Expand Multi-Project Documentation",
+      explanation: `Your work is concentrated in ${temporalCadence.primaryActiveRepo}. Adding clear architecture documentation will make secondary projects equally accessible.`,
+    });
+  } else {
+    developmentAreas.push({
+      title: "Keep Main Repositories Documented",
+      explanation: `Adding clear setup instructions and architecture guides to ${topRepoNames[0] || "primary repositories"} enhances technical transparency.`,
+    });
+  }
 
   const engineeringPatterns = [
     {
-      title: "Full-Stack Application Development",
-      explanation: `Your projects combine frontend interfaces with backend services in ${langText}.`,
+      title: `${primaryLangName} Application Architecture`,
+      explanation: `Structured repository layout across ${repoCount} project${repoCount === 1 ? "" : "s"} with verified code contributions.`,
     },
     {
-      title: "Active Contribution Rhythm",
-      explanation: `Regular commit history across ${repoCount} projects shows steady progress over time.`,
+      title: "Commit Cadence & Delivery",
+      explanation: temporalCadence ? temporalCadence.activityDescription : `Commit history across ${repoCount} projects shows active code iteration.`,
     },
   ];
 
   const careerSignals = [];
-  if (primaryLangs.some((l) => ["typescript", "javascript", "react", "html", "css"].includes(l.toLowerCase()))) {
+  const lowerLangs = primaryLangs.map((l) => l.toLowerCase());
+  const lowerTechs = (uniqueTechnologies || []).map((t) => t.toLowerCase());
+
+  if (lowerLangs.some((l) => ["typescript", "javascript", "react", "html", "css"].includes(l)) || lowerTechs.some((t) => ["react", "next.js", "vue"].includes(t))) {
     careerSignals.push({
-      role: "Full-Stack Development",
-      explanation: "Your project history includes both frontend and backend development.",
+      role: "Full-Stack Web Development",
+      explanation: `Your project history includes verified full-stack architecture in ${langText}.`,
     });
-  } else if (primaryLangs.some((l) => ["python", "go", "rust", "java"].includes(l.toLowerCase()))) {
+  } else if (lowerLangs.some((l) => ["python", "r"].includes(l)) || lowerTechs.some((t) => ["pandas", "pytorch", "tensorflow", "scikit-learn"].includes(t))) {
     careerSignals.push({
-      role: "Backend & Systems Development",
-      explanation: "Your project history shows experience with backend services, structured logic, and data workflows.",
+      role: "Data Science & Machine Learning Engineering",
+      explanation: "Project evidence aligns with structured Python data workflows and analytical codebases.",
+    });
+  } else if (lowerLangs.some((l) => ["dart", "flutter", "swift", "kotlin"].includes(l)) || lowerTechs.some((t) => ["flutter", "react native", "android", "ios"].includes(t))) {
+    careerSignals.push({
+      role: "Mobile Application Engineering",
+      explanation: "Repository structure and dependency manifests demonstrate mobile app development experience.",
+    });
+  } else if (lowerLangs.some((l) => ["go", "rust", "c", "c++"].includes(l))) {
+    careerSignals.push({
+      role: "Systems & Infrastructure Engineering",
+      explanation: "Project history demonstrates systems-level software development and performant code architecture.",
+    });
+  } else if (lowerLangs.some((l) => ["java", "c#"].includes(l))) {
+    careerSignals.push({
+      role: "Enterprise & Backend Systems Engineering",
+      explanation: "Verified codebases reflect structured object-oriented backend service architecture.",
     });
   } else {
     careerSignals.push({
       role: "Software Application Development",
-      explanation: `Your project work demonstrates practical experience building software across ${repoCount} repositories.`,
+      explanation: `Practical engineering experience building software applications across ${repoCount} repositories.`,
     });
   }
 
+  const flagshipRepoName = topRepoNames[0] || "your main repository";
   const recommendedNextSteps = [
     {
-      title: "Improve One Main Project",
-      reason: "Add automated tests and clear documentation to one of your important projects.",
+      title: !testingDetected ? `Add Test Coverage in ${flagshipRepoName}` : `Enhance CI/CD in ${flagshipRepoName}`,
+      reason: !testingDetected
+        ? `Adding tests to ${flagshipRepoName} creates verifiable proof of automated quality assurance.`
+        : `Continuous integration workflows reinforce engineering discipline across project updates.`,
     },
     {
-      title: "Keep Your Main Projects Active",
-      reason: "Continue maintaining your main projects and keeping your GitHub history up to date.",
+      title: `Maintain Active Iterations in ${flagshipRepoName}`,
+      reason: `Sustaining incremental commits in your primary codebase keeps your developer evidence fresh and authoritative.`,
     },
   ];
 
@@ -197,8 +450,8 @@ function synthesizeEvidenceDeterministically(snapshot, hash) {
       repositoriesCount: repoCount,
       commitsCount: totalCommits,
       pullRequestsCount: totalPRs,
-      technologiesCount: uniqueTechnologies.length,
-      skillsCount: skills.length,
+      technologiesCount: (uniqueTechnologies || []).length,
+      skillsCount: (skills || []).length,
     },
     provider: "deterministic-engine",
     isAiGenerated: false,
@@ -206,205 +459,117 @@ function synthesizeEvidenceDeterministically(snapshot, hash) {
   };
 }
 
-// Generate 50 realistic test scenarios covering diverse developer profiles
-function generateTestScenarios() {
-  const scenarios = [];
+// ============================================================================
+// 50 REPRESENTATIVE BENCHMARK DEVELOPER SCENARIOS
+// ============================================================================
+const scenarios = [];
 
-  // Scenarios 1-10: Web & TypeScript Developers
-  for (let i = 1; i <= 10; i++) {
-    const repoCount = i + 2;
-    const commits = i * 20 + 15;
-    scenarios.push({
-      id: `WEB_TS_${i}`,
-      developerName: `TypeScriptDev_${i}`,
-      repositories: Array.from({ length: repoCount }, (_, idx) => ({
-        id: `repo_${i}_${idx}`,
-        name: `ts-project-${idx}`,
-        fullName: `user/ts-project-${idx}`,
-        language: idx % 2 === 0 ? "TypeScript" : "JavaScript",
-        stars: idx * 2,
-        commitCount: Math.floor(commits / repoCount),
-        prCount: idx,
-        technologies: ["TypeScript", "React", "Next.js", "Tailwind CSS"],
-      })),
-      skills: [
-        { name: "TypeScript", category: "Language", proficiencyScore: 92, evidenceStrength: "Strong Evidence", evidenceCount: commits, projectCount: repoCount },
-        { name: "React", category: "Framework", proficiencyScore: 88, evidenceStrength: "Strong Evidence", evidenceCount: Math.floor(commits * 0.7), projectCount: repoCount - 1 },
-        { name: "CSS", category: "Language", proficiencyScore: 65, evidenceStrength: "Moderate Evidence", evidenceCount: 12, projectCount: 2 },
-      ],
-      totalCommits: commits,
-      totalPRs: Math.floor(i * 1.5),
-      integrityScore: 90 + (i % 5),
-      testingDetected: i > 5,
-      uniqueLanguages: ["TypeScript", "JavaScript", "CSS"],
-      uniqueTechnologies: ["TypeScript", "React", "Next.js", "Tailwind CSS"],
-    });
-  }
+const TECH_CATALOG = [
+  { lang: "TypeScript", framework: "Next.js", test: "Jest", db: "Prisma", alt: "React" },
+  { lang: "Python", framework: "FastAPI", test: "PyTest", db: "PostgreSQL", alt: "Pandas" },
+  { lang: "Go", framework: "Gin", test: "testing", db: "Redis", alt: "Docker" },
+  { lang: "Rust", framework: "Actix", test: "cargo test", db: "SQLite", alt: "Tokio" },
+  { lang: "Dart", framework: "Flutter", test: "flutter_test", db: "Firebase", alt: "Riverpod" },
+  { lang: "Java", framework: "Spring Boot", test: "JUnit", db: "MySQL", alt: "Hibernate" },
+];
 
-  // Scenarios 11-20: Backend Python / Go / Rust Developers
-  const backendLangs = ["Python", "Go", "Rust", "Java"];
-  for (let i = 1; i <= 10; i++) {
-    const lang = backendLangs[i % backendLangs.length];
-    const repoCount = i + 1;
-    const commits = i * 15 + 10;
+for (let i = 1; i <= 50; i++) {
+  if (i === 1) {
+    // Zero repo scenario
     scenarios.push({
-      id: `BACKEND_${lang}_${i}`,
-      developerName: `BackendDev_${lang}_${i}`,
-      repositories: Array.from({ length: repoCount }, (_, idx) => ({
-        id: `repo_be_${i}_${idx}`,
-        name: `${lang.toLowerCase()}-service-${idx}`,
-        fullName: `user/${lang.toLowerCase()}-service-${idx}`,
-        language: lang,
-        stars: idx * 3,
-        commitCount: Math.floor(commits / repoCount),
-        prCount: 0,
-        technologies: [lang, "PostgreSQL", "Docker"],
-      })),
-      skills: [
-        { name: lang, category: "Language", proficiencyScore: 90, evidenceStrength: "Strong Evidence", evidenceCount: commits, projectCount: repoCount },
-        { name: "PostgreSQL", category: "Database", proficiencyScore: 70, evidenceStrength: "Moderate Evidence", evidenceCount: 8, projectCount: 2 },
-      ],
-      totalCommits: commits,
+      id: "BENCHMARK-01-ZERO-REPOS",
+      developerName: "Empty Account",
+      repositories: [],
+      skills: [],
+      totalCommits: 0,
       totalPRs: 0,
-      integrityScore: 88,
-      testingDetected: i % 2 === 0,
-      uniqueLanguages: [lang],
-      uniqueTechnologies: [lang, "PostgreSQL", "Docker"],
-    });
-  }
-
-  // Scenarios 21-30: Mobile & Specialized Frameworks (Flutter, Kotlin, Swift)
-  const mobileLangs = ["Dart", "Kotlin", "Swift"];
-  for (let i = 1; i <= 10; i++) {
-    const lang = mobileLangs[i % mobileLangs.length];
-    const repoCount = i % 4 + 1;
-    const commits = i * 12 + 5;
-    scenarios.push({
-      id: `MOBILE_${lang}_${i}`,
-      developerName: `MobileDev_${lang}_${i}`,
-      repositories: Array.from({ length: repoCount }, (_, idx) => ({
-        id: `repo_mob_${i}_${idx}`,
-        name: `${lang.toLowerCase()}-app-${idx}`,
-        fullName: `user/${lang.toLowerCase()}-app-${idx}`,
-        language: lang,
-        stars: idx,
-        commitCount: Math.floor(commits / repoCount),
-        prCount: 0,
-        technologies: [lang, "Mobile UI"],
-      })),
-      skills: [
-        { name: lang, category: "Language", proficiencyScore: 85, evidenceStrength: "Strong Evidence", evidenceCount: commits, projectCount: repoCount },
-      ],
-      totalCommits: commits,
-      totalPRs: 0,
-      integrityScore: 85,
       testingDetected: false,
-      uniqueLanguages: [lang],
-      uniqueTechnologies: [lang, "Mobile UI"],
+      uniqueLanguages: [],
+      uniqueTechnologies: [],
     });
+    continue;
   }
 
-  // Scenarios 31-40: Mixed Testing Scenarios (Some with Jest/PyTest, some without)
-  for (let i = 1; i <= 10; i++) {
-    const hasTests = i <= 5;
+  if (i === 2) {
+    // Low activity / 1 repo scenario
     scenarios.push({
-      id: `TESTING_BENCHMARK_${i}`,
-      developerName: `TestDev_${i}`,
+      id: "BENCHMARK-02-SPARSE-ACTIVITY",
+      developerName: "Sparse Dev",
       repositories: [
         {
-          id: `repo_test_${i}`,
-          name: `project-test-${i}`,
-          fullName: `user/project-test-${i}`,
+          id: "sparse-repo-1",
+          name: "quick-starter",
+          fullName: "sparse/quick-starter",
           language: "TypeScript",
-          stars: 5,
-          commitCount: 40,
-          prCount: 2,
-          technologies: hasTests ? ["TypeScript", "Jest", "React"] : ["TypeScript", "React"],
+          stars: 0,
+          commitCount: 2,
+          prCount: 0,
+          technologies: ["TypeScript"],
         },
       ],
-      skills: [
-        { name: "TypeScript", category: "Language", proficiencyScore: 90, evidenceStrength: "Strong Evidence", evidenceCount: 40, projectCount: 1 },
-      ],
-      totalCommits: 40,
-      totalPRs: 2,
-      integrityScore: 92,
-      testingDetected: hasTests,
-      uniqueLanguages: ["TypeScript"],
-      uniqueTechnologies: hasTests ? ["TypeScript", "Jest", "React"] : ["TypeScript", "React"],
-    });
-  }
-
-  // Scenarios 41-49: Boundary / Edge Cases (1 commit, 0 commits, high commit count)
-  for (let i = 1; i <= 9; i++) {
-    const commits = i === 1 ? 1 : i === 2 ? 0 : i * 50;
-    const repos = i === 2 ? 0 : i;
-    scenarios.push({
-      id: `EDGE_CASE_${i}`,
-      developerName: `EdgeUser_${i}`,
-      repositories: repos === 0 ? [] : Array.from({ length: repos }, (_, idx) => ({
-        id: `repo_edge_${i}_${idx}`,
-        name: `edge-repo-${idx}`,
-        fullName: `user/edge-repo-${idx}`,
-        language: "JavaScript",
-        stars: 0,
-        commitCount: Math.floor(commits / repos),
-        prCount: 0,
-        technologies: ["JavaScript"],
-      })),
-      skills: repos === 0 ? [] : [
-        { name: "JavaScript", category: "Language", proficiencyScore: 60, evidenceStrength: "Emerging Evidence", evidenceCount: commits, projectCount: repos },
-      ],
-      totalCommits: commits,
+      skills: [{ name: "TypeScript", category: "Language", proficiencyScore: 40, evidenceStrength: "Limited Evidence", evidenceCount: 2, projectCount: 1 }],
+      totalCommits: 2,
       totalPRs: 0,
-      integrityScore: 78,
       testingDetected: false,
-      uniqueLanguages: repos === 0 ? [] : ["JavaScript"],
-      uniqueTechnologies: repos === 0 ? [] : ["JavaScript"],
+      uniqueLanguages: ["TypeScript"],
+      uniqueTechnologies: ["TypeScript"],
+    });
+    continue;
+  }
+
+  // Active developer scenarios across varied stacks
+  const archetype = TECH_CATALOG[(i - 3) % TECH_CATALOG.length];
+  const hasTests = i % 2 === 0;
+  const repoCount = ((i * 3) % 7) + 1; // 1 to 7 repos
+  const commitsPerRepo = ((i * 7) % 40) + 5; // 5 to 44 commits
+  const totalCommits = repoCount * commitsPerRepo;
+  const totalPRs = (i % 5);
+
+  const repos = [];
+  for (let r = 0; r < repoCount; r++) {
+    const isPrimary = r === 0;
+    const techs = isPrimary
+      ? [archetype.framework, hasTests ? archetype.test : null, archetype.db, archetype.alt].filter(Boolean)
+      : [archetype.framework, archetype.db];
+
+    repos.push({
+      id: `repo-${i}-${r}`,
+      name: `${archetype.lang.toLowerCase()}-service-${r + 1}`,
+      fullName: `dev-${i}/${archetype.lang.toLowerCase()}-service-${r + 1}`,
+      language: archetype.lang,
+      stars: r * 2,
+      commitCount: commitsPerRepo,
+      prCount: r === 0 ? totalPRs : 0,
+      technologies: techs,
     });
   }
 
-  // Scenario 50: Exact Production User Snapshot (rejieshashwanth30-ctrl)
-  scenarios.push({
-    id: "REAL_PROD_REJIESH_ASHWANTH",
-    developerName: "ashwanth",
-    githubUsername: "rejieshashwanth30-ctrl",
-    repositories: [
-      { id: "repo_gitrium", name: "gitrium", fullName: "rejieshashwanth30-ctrl/gitrium", language: "TypeScript", stars: 0, commitCount: 14, prCount: 0, technologies: ["TypeScript", "JavaScript", "CSS"] },
-      { id: "repo_wiqn", name: "WIQN_ADYK", fullName: "rejieshashwanth30-ctrl/WIQN_ADYK", language: "TypeScript", stars: 1, commitCount: 43, prCount: 0, technologies: ["TypeScript", "React", "Next.js"] },
-      { id: "repo_ashwanth", name: "ashwanth", fullName: "rejieshashwanth30-ctrl/ashwanth", language: "CSS", stars: 0, commitCount: 5, prCount: 0, technologies: ["CSS", "HTML"] },
-      { id: "repo_vsnm", name: "VSNM-PRINTCARE-", fullName: "rejieshashwanth30-ctrl/VSNM-PRINTCARE-", language: "HTML", stars: 0, commitCount: 3, prCount: 0, technologies: ["HTML"] },
-      { id: "repo_cardex", name: "adyk_cardex", fullName: "rejieshashwanth30-ctrl/adyk_cardex", language: "TypeScript", stars: 0, commitCount: 21, prCount: 0, technologies: ["TypeScript", "JavaScript"] },
-      { id: "repo_attent", name: "Orginal-attent-in", fullName: "rejieshashwanth30-ctrl/Orginal-attent-in", language: "Dart", stars: 0, commitCount: 1, prCount: 0, technologies: ["Dart"] },
-      { id: "repo_inspire", name: "Adyk-Inspire", fullName: "rejieshashwanth30-ctrl/Adyk-Inspire", language: "TypeScript", stars: 0, commitCount: 11, prCount: 0, technologies: ["TypeScript"] },
-      { id: "repo_zynn", name: "ZYnn_Buisness-OS-", fullName: "rejieshashwanth30-ctrl/ZYnn_Buisness-OS-", language: null, stars: 0, commitCount: 0, prCount: 0, technologies: [] },
-      { id: "repo_extra", name: "adyk_core", fullName: "rejieshashwanth30-ctrl/adyk_core", language: "TypeScript", stars: 0, commitCount: 2, prCount: 0, technologies: ["TypeScript"] },
-    ],
-    skills: [
-      { name: "TypeScript", category: "Language", proficiencyScore: 98, evidenceStrength: "Strong Evidence", evidenceCount: 91, projectCount: 5 },
-      { name: "JavaScript", category: "Language", proficiencyScore: 98, evidenceStrength: "Strong Evidence", evidenceCount: 35, projectCount: 2 },
-      { name: "CSS", category: "Language", proficiencyScore: 98, evidenceStrength: "Strong Evidence", evidenceCount: 19, projectCount: 2 },
-      { name: "HTML", category: "Language", proficiencyScore: 98, evidenceStrength: "Strong Evidence", evidenceCount: 8, projectCount: 2 },
-      { name: "Dart", category: "Language", proficiencyScore: 26, evidenceStrength: "Limited Evidence", evidenceCount: 1, projectCount: 1 },
-    ],
-    totalCommits: 99,
-    totalPRs: 0,
-    integrityScore: 94,
-    testingDetected: false,
-    uniqueLanguages: ["TypeScript", "JavaScript", "CSS", "HTML", "Dart"],
-    uniqueTechnologies: ["TypeScript", "JavaScript", "CSS", "HTML", "Dart", "React", "Next.js"],
-  });
+  const allTechs = Array.from(new Set(repos.flatMap((r) => r.technologies)));
+  const skills = [
+    { name: archetype.lang, category: "Language", proficiencyScore: 85, evidenceStrength: "Strong Evidence", evidenceCount: totalCommits, projectCount: repoCount },
+    { name: archetype.framework, category: "Framework", proficiencyScore: 78, evidenceStrength: "Moderate Evidence", evidenceCount: repoCount * 5, projectCount: repoCount },
+  ];
 
-  return scenarios;
+  scenarios.push({
+    id: `BENCHMARK-${String(i).padStart(2, "0")}-${archetype.lang.toUpperCase()}`,
+    developerName: `Dev-${i}`,
+    repositories: repos,
+    skills,
+    totalCommits,
+    totalPRs,
+    testingDetected: hasTests,
+    uniqueLanguages: [archetype.lang],
+    uniqueTechnologies: allTechs,
+  });
 }
 
+// ============================================================================
+// EVALUATION EXECUTION
+// ============================================================================
 async function runEvaluation() {
   console.log("================================================================================");
-  console.log("       ADYK GITRIUM — AI ACCURACY & EVIDENCE GROUNDING QUALITY EVALUATION       ");
-  console.log("================================================================================");
-  console.log("Target Quality Gate: >= 98.0% factual and numeric correctness across verifiable claims\n");
-
-  const scenarios = generateTestScenarios();
-  console.log(`Loaded ${scenarios.length} diverse developer evidence benchmark scenarios.\n`);
+  console.log("      ADYK GITRIUM — AUTOMATED AI INSIGHTS & EVIDENCE ACCURACY EVALUATION       ");
+  console.log("================================================================================\n");
 
   let totalClaimsEvaluated = 0;
   let correctClaims = 0;
@@ -418,15 +583,14 @@ async function runEvaluation() {
     const hash = computeEvidenceSnapshotHash(scenario);
     const insights = synthesizeEvidenceDeterministically(scenario, hash);
 
-    // 1. EVALUATION CHECK: Numeric Grounding
-    // Check repository count in basis
+    // 1. EVALUATION CHECK: Ground-Truth Number Consistency
     totalClaimsEvaluated++;
     if (insights.evidenceBasis.repositoriesCount === scenario.repositories.length) {
       correctClaims++;
     } else {
       incorrectClaims++;
       numericMismatches++;
-      failureLog.push(`[${scenario.id}] Repositories count mismatch: expected ${scenario.repositories.length}, got ${insights.evidenceBasis.repositoriesCount}`);
+      failureLog.push(`[${scenario.id}] Repository count mismatch: expected ${scenario.repositories.length}, got ${insights.evidenceBasis.repositoriesCount}`);
     }
 
     // Check commit count in basis
@@ -436,7 +600,7 @@ async function runEvaluation() {
     } else {
       incorrectClaims++;
       numericMismatches++;
-      failureLog.push(`[${scenario.id}] Commits count mismatch: expected ${scenario.totalCommits}, got ${insights.evidenceBasis.commitsCount}`);
+      failureLog.push(`[${scenario.id}] Commit count mismatch: expected ${scenario.totalCommits}, got ${insights.evidenceBasis.commitsCount}`);
     }
 
     // Check PR count in basis
@@ -458,7 +622,6 @@ async function runEvaluation() {
 
     for (const strength of insights.strengths) {
       totalClaimsEvaluated++;
-      // Check if strength mentions any language not present in ground truth (using word boundaries)
       const allKnownLangs = ["python", "go", "rust", "java", "dart", "kotlin", "swift", "php", "ruby", "c++", "c#"];
       const lowerTitle = strength.title.toLowerCase();
       const hallucinated = allKnownLangs.filter((l) => {
@@ -479,7 +642,6 @@ async function runEvaluation() {
     totalClaimsEvaluated++;
     const recommendsTesting = insights.developmentAreas.some((a) => a.title.toLowerCase().includes("test"));
     if (scenario.testingDetected) {
-      // If tests detected, must NOT recommend adding automated tests
       if (!recommendsTesting) {
         correctClaims++;
       } else {
@@ -487,7 +649,6 @@ async function runEvaluation() {
         failureLog.push(`[${scenario.id}] Erroneously recommended adding tests when testing was already detected`);
       }
     } else {
-      // If no tests detected and repos > 0, recommending tests is valid
       if (scenario.repositories.length === 0 || recommendsTesting) {
         correctClaims++;
       } else {

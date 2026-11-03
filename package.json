@@ -9,7 +9,7 @@
     "db:migrate": "prisma migrate deploy",
     "start": "next start",
     "lint": "next lint",
-    "test": "node scripts/run_multiuser_isolation_audit.js && node scripts/run_ai_accuracy_evaluation.js && node scripts/run_production_data_consistency_audit.js",
+    "test": "node scripts/run_multiuser_isolation_audit.js && node scripts/run_ai_accuracy_evaluation.js && node scripts/run_production_data_consistency_audit.js && node scripts/run_personalized_ai_intelligence_test.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {

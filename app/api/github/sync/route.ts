@@ -116,6 +116,14 @@ export async function POST() {
       console.warn("[GitHub Sync API] Skill recomputation pending:", skillsErr?.message);
     }
 
+    // Invalidate old AI insights so fresh personalized insights are generated from new code evidence
+    try {
+      const { prisma } = await import("@/lib/db/prisma");
+      await prisma.aIInsight.deleteMany({ where: { userId: profile.id } });
+    } catch (aiInvalidateErr: any) {
+      console.warn("[GitHub Sync API] AI insight cache invalidation pending:", aiInvalidateErr?.message);
+    }
+
     return NextResponse.json({
       success: true,
       status: syncResult.status,

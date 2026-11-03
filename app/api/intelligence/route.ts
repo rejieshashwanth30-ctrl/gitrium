@@ -6,6 +6,7 @@ import {
   EvidenceSnapshot,
   StructuredAIInsights,
   computeEvidenceSnapshotHash,
+  enrichEvidenceSnapshot,
   generateAIInterpretation,
 } from "@/lib/intelligence/aiLayer";
 
@@ -123,7 +124,9 @@ async function buildEvidenceSnapshot(userId: string, profile: any): Promise<Evid
   const totalCommits = repos.reduce((sum, r) => sum + (r.commitCount || 0), 0);
   const totalPRs = repos.reduce((sum, r) => sum + (r.prCount || 0), 0);
 
-  return {
+  const rawSnapshot: EvidenceSnapshot = {
+    userId: profile.id,
+    evidenceVersion: "v2.0_personalized",
     developerName: profile.displayName || profile.username || "Developer",
     githubUsername: profile.username || undefined,
     repositories: repos.map((r) => ({
@@ -154,6 +157,8 @@ async function buildEvidenceSnapshot(userId: string, profile: any): Promise<Evid
     uniqueTechnologies: Array.from(allTechs),
     lastActivity: new Date().toISOString(),
   };
+
+  return enrichEvidenceSnapshot(rawSnapshot);
 }
 
 export async function GET(request: Request) {
@@ -175,6 +180,12 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const forceRefresh = searchParams.get("force") === "true";
+
+    if (forceRefresh) {
+      await prisma.aIInsight.deleteMany({
+        where: { userId: profile.id },
+      });
+    }
 
     const snapshot = await buildEvidenceSnapshot(profile.id, profile);
     const hash = computeEvidenceSnapshotHash(snapshot);
@@ -254,6 +265,10 @@ export async function POST(request: Request) {
     const snapshot = await buildEvidenceSnapshot(profile.id, profile);
     const hash = computeEvidenceSnapshotHash(snapshot);
     const insights = await generateAIInterpretation(snapshot);
+
+    await prisma.aIInsight.deleteMany({
+      where: { userId: profile.id },
+    });
 
     const saved = await prisma.aIInsight.create({
       data: {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { ensureUserProfile } from "@/lib/auth/profileService";
 import { prisma } from "@/lib/db/prisma";
-import { generateAIInterpretation } from "@/lib/intelligence/aiLayer";
+import { generateAIInterpretation, enrichEvidenceSnapshot } from "@/lib/intelligence/aiLayer";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -127,7 +127,8 @@ export async function POST(request: Request) {
       new Set(targetRepos.flatMap((r) => (r.technologies || []).map((t: any) => t.name)))
     );
 
-    const snapshot = {
+    const snapshot = enrichEvidenceSnapshot({
+      userId: profile.id,
       developerName: profile.displayName || profile.username || "Developer",
       githubUsername: profile.username || undefined,
       repositories: targetRepos.map((r) => ({
@@ -157,7 +158,7 @@ export async function POST(request: Request) {
       uniqueLanguages: uniqueLangs,
       uniqueTechnologies: uniqueTechs,
       lastActivity: new Date().toISOString(),
-    };
+    });
 
     const ai = await generateAIInterpretation(snapshot);
 
