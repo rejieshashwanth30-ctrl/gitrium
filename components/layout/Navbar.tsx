@@ -2,20 +2,56 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { GitriumLogo } from "@/components/logo/GitriumLogo";
 import { Button } from "@/components/ui/Button";
 import { NAV_LINKS, MOBILE_NAV_LINKS } from "@/lib/constants";
 import { Menu, X, ArrowRight, Github } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/utils/supabase/client";
 
 export function Navbar() {
+  const pathname = usePathname() || "/";
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
 
-  // Sticky Scroll Detection & Active Section Indicator
+  // Accurate Supabase Server-Side Authenticated Session Verification & Listener
   useEffect(() => {
+    let isMounted = true;
+    const supabase = createClient();
+
+    // 1. Initial server-verified session check
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (isMounted) {
+        setIsAuthenticated(!!user);
+      }
+    });
+
+    // 2. Real-time auth subscription for login, logout, and token refresh
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isMounted) {
+        setIsAuthenticated(!!session?.user);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Sticky Scroll Detection & Active Section Indicator (only active on homepage)
+  useEffect(() => {
+    if (pathname !== "/") {
+      setActiveSection("");
+      return;
+    }
+
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > 15);
@@ -58,7 +94,7 @@ export function Navbar() {
     handleScroll();
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [pathname]);
 
   // Body Scroll Locking & Escape Key Handling
   useEffect(() => {
@@ -108,8 +144,11 @@ export function Navbar() {
     href: string
   ) => {
     if (href.startsWith("#")) {
-      e.preventDefault();
-      scrollToAnchor(href);
+      if (pathname === "/") {
+        e.preventDefault();
+        scrollToAnchor(href);
+      }
+      // If on another route, default Link navigation takes user to /#section
     }
   };
 
@@ -119,12 +158,28 @@ export function Navbar() {
   ) => {
     setMobileMenuOpen(false);
     if (href.startsWith("#")) {
-      e.preventDefault();
-      setTimeout(() => {
-        scrollToAnchor(href);
-      }, 120);
+      if (pathname === "/") {
+        e.preventDefault();
+        setTimeout(() => {
+          scrollToAnchor(href);
+        }, 120);
+      }
     }
   };
+
+  const isDashboardRoute =
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/") ||
+    pathname === "/repositories" ||
+    pathname.startsWith("/repositories/") ||
+    pathname === "/contributions" ||
+    pathname === "/skills" ||
+    pathname === "/evidence" ||
+    pathname === "/integrity" ||
+    pathname === "/analysis" ||
+    pathname === "/career" ||
+    pathname === "/reports" ||
+    pathname.startsWith("/reports/");
 
   return (
     <>
@@ -148,16 +203,24 @@ export function Navbar() {
             />
           </div>
 
-          {/* CENTER: Desktop Navigation Links */}
+          {/* CENTER: Desktop Navigation Links (Product | Features | Evidence Graph | Integrity | About | Dashboard) */}
           <nav className="hidden lg:flex items-center gap-6 xl:gap-8 whitespace-nowrap">
             {NAV_LINKS.map((link) => {
-              const sectionId = link.href.slice(1);
-              const isActive = activeSection === sectionId;
+              const isDashboard = link.label === "Dashboard" || link.href === "/dashboard";
+              const sectionId = link.href.startsWith("#") ? link.href.slice(1) : "";
+              const isActive = isDashboard
+                ? isDashboardRoute
+                : pathname === "/" && activeSection === sectionId;
+
+              const targetHref =
+                link.href.startsWith("#") && pathname !== "/"
+                  ? `/${link.href}`
+                  : link.href;
 
               return (
-                <a
+                <Link
                   key={link.label}
-                  href={link.href}
+                  href={targetHref}
                   onClick={(e) => handleAnchorClick(e, link.href)}
                   className={cn(
                     "relative py-1.5 text-[13px] font-medium transition-colors duration-150 group flex flex-col items-center whitespace-nowrap",
@@ -175,14 +238,14 @@ export function Navbar() {
                         : "bg-[#24352C] scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-100 group-hover:bg-[#159A72]"
                     )}
                   />
-                </a>
+                </Link>
               );
             })}
           </nav>
 
           {/* RIGHT: Desktop CTA Actions */}
           <div className="hidden lg:flex items-center gap-3 shrink-0">
-            <Link href="/login">
+            <Link href={isAuthenticated ? "/dashboard" : "/login"}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -207,7 +270,7 @@ export function Navbar() {
           {/* TABLET & MOBILE CONTROLS (< 1024px) */}
           <div className="flex lg:hidden items-center gap-2 sm:gap-3 shrink-0">
             <div className="hidden sm:flex items-center gap-2">
-              <Link href="/login">
+              <Link href={isAuthenticated ? "/dashboard" : "/login"}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -269,15 +332,24 @@ export function Navbar() {
             ref={drawerRef}
             className="relative bg-[#151A17] border-b border-[#24352C] shadow-2xl px-5 pt-3 pb-6 space-y-3.5 max-h-[calc(100vh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-150"
           >
+            {/* Standard Mobile Navigation Links with Smart Active State */}
             <div className="flex flex-col divide-y divide-[#24352C]">
               {MOBILE_NAV_LINKS.map((link) => {
-                const sectionId = link.href.slice(1);
-                const isActive = activeSection === sectionId;
+                const isDashboard = link.label === "Dashboard" || link.href === "/dashboard";
+                const sectionId = link.href.startsWith("#") ? link.href.slice(1) : "";
+                const isActive = isDashboard
+                  ? isDashboardRoute
+                  : pathname === "/" && activeSection === sectionId;
+
+                const targetHref =
+                  link.href.startsWith("#") && pathname !== "/"
+                    ? `/${link.href}`
+                    : link.href;
 
                 return (
-                  <a
+                  <Link
                     key={link.label}
-                    href={link.href}
+                    href={targetHref}
                     onClick={(e) => handleMobileLinkClick(e, link.href)}
                     className={cn(
                       "min-h-[44px] py-2 px-3 flex items-center justify-between text-sm font-medium rounded-[7px] transition-colors whitespace-nowrap",
@@ -290,24 +362,17 @@ export function Navbar() {
                     {isActive && (
                       <span className="w-1.5 h-1.5 rounded-full bg-[#159A72]" />
                     )}
-                  </a>
+                  </Link>
                 );
               })}
             </div>
 
-            <div className="pt-1">
-              <Link
-                href="/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="min-h-[44px] px-3 py-2.5 rounded-[7px] text-xs font-semibold text-[#159A72] bg-[#18352B] hover:bg-[#1E2822] flex items-center justify-between transition-colors border border-[#24352C]"
-              >
-                <span>Live Evidence Dashboard</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
+            {/* Auth Actions in Drawer */}
             <div className="pt-3 border-t border-[#24352C] flex flex-col gap-2.5">
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+              <Link
+                href={isAuthenticated ? "/dashboard" : "/login"}
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 <Button
                   variant="secondary"
                   size="md"

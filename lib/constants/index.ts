@@ -26,6 +26,7 @@ export const NAV_LINKS = [
   { label: "Evidence Graph", href: "#evidence-graph" },
   { label: "Integrity", href: "#integrity" },
   { label: "About", href: "#about" },
+  { label: "Dashboard", href: "/dashboard" },
 ];
 
 export const MOBILE_NAV_LINKS = [
@@ -34,6 +35,7 @@ export const MOBILE_NAV_LINKS = [
   { label: "Evidence Graph", href: "#evidence-graph" },
   { label: "Integrity", href: "#integrity" },
   { label: "About", href: "#about" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Contact", href: "#contact" },
 ];
 
