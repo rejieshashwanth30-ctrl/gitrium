@@ -453,29 +453,71 @@ class ProductionGitriumApiService implements IGitriumService {
   }
 
   async getIntegritySignals(): Promise<IntegritySignal[]> {
-    return this.fetchWithCache("integrity_signals", async () => {
+    const data = await this.getIntegrityData();
+    return data.signals;
+  }
+
+  async getIntegrityData(): Promise<{
+    overallScore: number;
+    evidenceStrength: EvidenceStrength;
+    evidenceDescription: string;
+    signals: IntegritySignal[];
+    repositoriesCount: number;
+    totalCommits: number;
+    totalPRs: number;
+    verifiedSignalsCount: number;
+    activeProjectsCount: number;
+  }> {
+    return this.fetchWithCache("integrity_data", async () => {
       try {
         if (typeof window !== "undefined") {
           const res = await fetch("/api/integrity", { cache: "no-store" });
           if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data.signals)) {
-              return data.signals.map((s: any) => ({
-                id: s.id,
-                category: s.category,
-                score: s.score,
-                label: s.status === "Optimal" ? "Strong Evidence" : "Moderate Evidence",
-                description: s.evidenceText,
-                findings: s.findings || [],
-                confidenceInterval: s.confidenceInterval || "95% Confidence",
-              }));
-            }
+            const rawSignals = Array.isArray(data.signals) ? data.signals : [];
+            const mappedSignals: IntegritySignal[] = rawSignals.map((s: any) => ({
+              id: s.id,
+              name: s.name || s.category,
+              category: s.category || s.name,
+              score: s.score,
+              label: s.label || (s.score >= 80 ? "Strong Evidence" : s.score >= 50 ? "Moderate Evidence" : "Limited Evidence"),
+              description: s.evidenceText || s.description,
+              findings: s.findings || [],
+              confidenceInterval: s.confidenceInterval || "High Evidence Confidence",
+              whatGitriumSaw: s.whatGitriumSaw,
+              whatThisMeans: s.whatThisMeans,
+              metricLabel: s.metricLabel,
+              metricValue: s.metricValue,
+              status: s.status,
+            }));
+
+            return {
+              overallScore: typeof data.overallScore === "number" ? data.overallScore : 0,
+              evidenceStrength: (data.evidenceStrength as EvidenceStrength) || "Strong Evidence",
+              evidenceDescription: data.evidenceDescription || "Most available signals support this assessment.",
+              signals: mappedSignals,
+              repositoriesCount: typeof data.repositoriesCount === "number" ? data.repositoriesCount : 0,
+              totalCommits: typeof data.totalCommits === "number" ? data.totalCommits : 0,
+              totalPRs: typeof data.totalPRs === "number" ? data.totalPRs : 0,
+              verifiedSignalsCount: typeof data.verifiedSignalsCount === "number" ? data.verifiedSignalsCount : mappedSignals.filter(s => s.score >= 70).length,
+              activeProjectsCount: typeof data.activeProjectsCount === "number" ? data.activeProjectsCount : data.repositoriesCount || 0,
+            };
           }
         }
       } catch (e) {
         console.warn("Integrity API query error:", e);
       }
-      return [];
+      return {
+        overallScore: 0,
+        evidenceStrength: "Limited Evidence",
+        evidenceDescription: "Gitrium has limited evidence available for this area.",
+        signals: [],
+        repositoriesCount: 0,
+        totalCommits: 0,
+        totalPRs: 0,
+        verifiedSignalsCount: 0,
+        activeProjectsCount: 0,
+      };
     });
   }
 

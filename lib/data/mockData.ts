@@ -558,7 +558,7 @@ export const MOCK_ANALYSIS_REPORT: AnalysisReport = {
   integrityBreakdown: {
     overallScore: 86,
     signals: MOCK_INTEGRITY_SIGNALS,
-    note: "Analytical signals indicate organic human authorship with healthy development cadence. AI tool assistance observed in standard boilerplate generation without compromising architecture originality.",
+    note: "Analytical signals indicate consistent development activity and healthy engineering cadence across repository milestones.",
   },
   recommendations: [
     "Increase end-to-end integration tests using Flutter Driver / Patrol for critical checkout paths.",

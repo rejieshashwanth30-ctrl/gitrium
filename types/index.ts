@@ -170,13 +170,19 @@ export interface Skill {
 
 export interface IntegritySignal {
   id: string;
-  category: "Repository History" | "Contribution Consistency" | "Project Evolution" | "Code Pattern Signals" | "Development Continuity";
+  category: string;
+  name?: string;
   score: number; // 0 - 100
   label: EvidenceStrength;
   description: string;
   findings: string[];
-  isAnalyticalSignalOnly: true; // Explicit ethical flag
+  isAnalyticalSignalOnly?: boolean; // Explicit ethical flag
   confidenceInterval: string;
+  whatGitriumSaw?: string;
+  whatThisMeans?: string;
+  metricLabel?: string;
+  metricValue?: string;
+  status?: "Optimal" | "Verifiable" | "Attention" | "Flagged";
 }
 
 export interface Project {

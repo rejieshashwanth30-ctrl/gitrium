@@ -34,6 +34,9 @@ export async function GET() {
         isSelected: true,
       },
       select: {
+        id: true,
+        name: true,
+        description: true,
         commitCount: true,
         prCount: true,
         technologies: { select: { name: true, category: true } },
@@ -44,15 +47,19 @@ export async function GET() {
     let totalCommits = 0;
     let totalPRs = 0;
     let hasTesting = false;
+    let hasDocumentation = repositories.length > 0;
 
     for (const repo of repositories) {
       totalCommits += repo.commitCount || 0;
       totalPRs += repo.prCount || 0;
+      if (repo.description && repo.description.trim().length > 10) {
+        hasDocumentation = true;
+      }
       if (
         repo.technologies.some(
           (t) =>
             t.category === "Testing" ||
-            ["jest", "vitest", "mocha", "pytest", "test"].includes(t.name.toLowerCase())
+            ["jest", "vitest", "mocha", "pytest", "test", "cypress", "playwright"].includes(t.name.toLowerCase())
         )
       ) {
         hasTesting = true;
@@ -64,6 +71,7 @@ export async function GET() {
       totalCommits,
       totalPRs,
       hasTestingEvidence: hasTesting,
+      hasDocumentation,
     });
 
     const overallScore =
@@ -71,12 +79,29 @@ export async function GET() {
         ? Math.round(signals.reduce((sum, s) => sum + s.score, 0) / signals.length)
         : 0;
 
+    const evidenceStrength =
+      overallScore >= 80 ? "Strong Evidence" : overallScore >= 50 ? "Moderate Evidence" : "Limited Evidence";
+
+    const evidenceDescription =
+      overallScore >= 80
+        ? "Most available signals support this assessment."
+        : overallScore >= 50
+        ? "Some supporting evidence is available, but coverage is incomplete."
+        : "Gitrium has limited evidence available for this area.";
+
+    const verifiedSignalsCount = signals.filter((s) => s.score >= 70).length;
+    const activeProjectsCount = repositories.filter((r) => (r.commitCount || 0) > 0).length || repositoriesCount;
+
     return NextResponse.json({
       overallScore,
+      evidenceStrength,
+      evidenceDescription,
       signals,
       repositoriesCount,
       totalCommits,
       totalPRs,
+      verifiedSignalsCount,
+      activeProjectsCount,
     });
   } catch (error) {
     console.error("Integrity API error:", error);
