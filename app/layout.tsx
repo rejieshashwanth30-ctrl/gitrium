@@ -30,7 +30,12 @@ export const metadata: Metadata = {
     "software engineering portfolio",
     "ADYK Gitrium",
   ],
-  authors: [{ name: "ADYK Multi Venture Company" }],
+  authors: [
+    { name: "Rejiesh Ashwanth V", url: "https://www.linkedin.com/in/rejiesh-ashwanth-v-33ab1b37b" },
+    { name: "ADYK Multi Venture Company", url: "https://www.linkedin.com/in/adyk-a-multi-venture-company-38782a431" },
+  ],
+  creator: "Rejiesh Ashwanth V",
+  publisher: "ADYK Multi Venture Company",
   openGraph: {
     title: `${PRODUCT_INFO.name} — ${PRODUCT_INFO.tagline}`,
     description: PRODUCT_INFO.description,

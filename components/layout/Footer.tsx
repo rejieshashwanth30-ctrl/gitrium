@@ -63,18 +63,32 @@ export function Footer() {
             <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#F7F6F1]">
               ADYK Multi Venture Company
             </h4>
-            <p className="text-xs text-[#A8B3AC]">
-              Built by{" "}
-              <a
-                href={PRODUCT_INFO.social.linkedin}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[#F7F6F1] hover:underline font-semibold"
-              >
-                ADYK Multi Venture Company
-              </a>
-              .
-            </p>
+            <div className="space-y-1 text-xs text-[#A8B3AC]">
+              <p>
+                Built by{" "}
+                <a
+                  href={PRODUCT_INFO.founder.linkedin}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#F7F6F1] hover:underline font-semibold"
+                >
+                  Rejiesh Ashwanth V
+                </a>
+                .
+              </p>
+              <p>
+                Launch by{" "}
+                <a
+                  href={PRODUCT_INFO.social.linkedin}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#F7F6F1] hover:underline font-semibold"
+                >
+                  ADYK Multi Venture Company
+                </a>
+                .
+              </p>
+            </div>
 
             <div className="flex items-center gap-3 pt-2 text-xs font-mono">
               <a

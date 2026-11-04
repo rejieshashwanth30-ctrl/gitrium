@@ -530,10 +530,10 @@ export function AboutAndBuiltBySection() {
             </span>
             <div className="space-y-1">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#17201B] tracking-tight">
-                Built by ADYK
+                Built by Rejiesh Ashwanth V
               </h2>
               <p className="text-xs sm:text-sm font-sans font-medium text-[#56635C]">
-                Engineering Division — <strong className="text-[#17201B]">ADYK Multi Venture Company</strong>
+                Launch by <strong className="text-[#17201B]">ADYK Multi Venture Company</strong>
               </p>
             </div>
           </div>
@@ -633,7 +633,16 @@ export function AboutAndBuiltBySection() {
 
           {/* Footer Social & Company */}
           <div className="pt-4 border-t border-[#EFEEE8] flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href={PRODUCT_INFO.founder.linkedin}
+                target="_blank"
+                rel="noreferrer"
+                className="group inline-flex items-center gap-2 px-3.5 py-2 rounded-[7px] bg-[#F7F6F1] hover:bg-[#18352B] border border-[#DDE1DC] hover:border-[#159A72]/40 text-[#17201B] hover:text-white text-xs font-sans font-medium transition-all active:scale-[0.96] select-none"
+              >
+                <Linkedin className="w-3.5 h-3.5 text-[#159A72] group-hover:text-[#34D399] transition-colors" />
+                <span>Founder LinkedIn</span>
+              </a>
               <a
                 href={PRODUCT_INFO.social.linkedin}
                 target="_blank"
@@ -656,7 +665,7 @@ export function AboutAndBuiltBySection() {
 
             <div className="flex items-center gap-2 text-xs font-sans font-semibold text-[#17201B]">
               <span className="w-2 h-2 rounded-full bg-[#159A72]" />
-              <span>{PRODUCT_INFO.company}</span>
+              <span>Launch by {PRODUCT_INFO.company}</span>
             </div>
           </div>
         </div>
